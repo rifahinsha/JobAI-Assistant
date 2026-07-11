@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit Profile | Job Assistant{% endblock %}
+
+{% block extra_style %}
+<style>
+    /* Everything else (card, field-group, field-row, label, inputs, divider,
+       actions, submit button) now comes from the shared style.css. Only
+       page-specific bits (file upload widget) live here. */
+
+    .file-drop {
+        border: 1.5px dashed var(--border);
+        border-radius: 14px;
+        padding: 1.1rem 1.2rem;
+        background: var(--paper-soft);
+        display: flex;
+        align-items: center;
+        gap: 0.9rem;
+        flex-wrap: wrap;
+    }
+    .file-drop-icon {
+        width: 40px; height: 40px; border-radius: 10px;
+        background: var(--green-deep); color: var(--lime);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.1rem; flex-shrink: 0;
+    }
+    .file-drop-text { font-size: 0.85rem; color: var(--ink-soft); }
+
+    .file-drop input[type="file"] {
+        font-family: inherit;
+        font-size: 0.85rem;
+        max-width: 100%;
+        color: var(--ink-soft);
+    }
+    .file-drop input[type="file"]::file-selector-button {
+        font-family: inherit;
+        font-weight: 600;
+        font-size: 0.82rem;
+        color: var(--ink);
+        background: var(--lime);
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 999px;
+        margin-right: 0.8rem;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+    .file-drop input[type="file"]::file-selector-button:hover {
+        background: var(--lime-deep);
+    }
+
+    .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        margin-top: 0.9rem;
+        font-size: 0.88rem;
+        color: var(--ink-soft);
+        font-weight: 500;
+    }
+    .checkbox-row input[type="checkbox"] {
+        width: 18px; height: 18px;
+        accent-color: var(--lime-deep);
+    }
+    .checkbox-row label { margin: 0; font-weight: 500; color: var(--ink-soft); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    {% url 'profile' as profile_url %}
+    <div class="banner">
+        {% include "partials/nav.html" with nav_href=profile_url nav_label="Back to Profile" nav_dark=True %}
+        <div class="banner-body">
+            <span>Account settings</span>
+            <h2>Edit Profile</h2>
+        </div>
+    </div>
+
+    {% if messages %}
+    <ul class="notices">
+        {% for message in messages %}
+            <li data-tag="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="content-wrap">
+        <div class="card">
+            <form action="{% url 'edit_profile' %}" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="field-group">
+                    <label for="profile_pic">Profile Picture</label>
+                    <div class="file-drop">
+                        <span class="file-drop-icon" aria-hidden="true">🖼️</span>
+                        <input type="file" id="profile_pic" name="profile_pic" accept="image/*">
+                    </div>
+                    <div class="checkbox-row">
+                        <input type="checkbox" id="remove_pic" name="remove_pic">
+                        <label for="remove_pic">Remove current picture</label>
+                    </div>
+                </div>
+
+                <hr class="divider">
+
+                <div class="field-row">
+                    <div class="field-group">
+                        <label for="fname">First Name</label>
+                        <input type="text" id="fname" name="fname">
+                    </div>
+                    <div class="field-group">
+                        <label for="lname">Last Name</label>
+                        <input type="text" id="lname" name="lname">
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email">
+                </div>
+
+                <div class="field-group">
+                    <label for="phone_number">Phone Number</label>
+                    <input type="tel" id="phone_number" name="phone_number">
+                </div>
+
+                <div class="actions">
+                    <button type="submit">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}

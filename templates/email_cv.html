@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mail & Cover Letter Generator | Job Assistant{% endblock %}
+
+{% block extra_style %}
+<style>
+    fieldset { margin-bottom: 16px; border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--paper-soft); }
+    legend { font-weight: 600; font-size: 0.9rem; padding: 0 6px; color: var(--ink); }
+    .input-toggle { margin-bottom: 8px; }
+    .input-toggle label { margin-right: 16px; font-weight: normal; font-size: 0.9rem; color: var(--ink-soft); display: inline; }
+    textarea {
+        width: 100%; min-height: 120px; box-sizing: border-box;
+        font-family: inherit; font-size: 0.92rem;
+        border: 1.5px solid var(--border); border-radius: 10px;
+        padding: 0.7rem 0.9rem; background: #fff; color: var(--ink);
+    }
+    textarea:focus { outline: none; border-color: var(--lime-deep); }
+    input[type="file"] { margin-top: 6px; font-size: 0.85rem; }
+
+    #analyze-form button[type="submit"] { padding: 10px 20px; font-size: 0.95rem; margin-top: 8px; }
+    #reset-uploads {
+        padding: 10px 20px; font-size: 0.9rem; margin-top: 8px; margin-left: 10px;
+        background: transparent; color: var(--ink-soft);
+        border: 1.5px solid var(--border); border-radius: 999px; cursor: pointer;
+        font-family: inherit; font-weight: 600;
+        transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    #reset-uploads:hover { border-color: var(--green-deep); color: var(--green-deep); }
+    #status { margin-top: 10px; font-size: 0.9em; color: var(--ink-soft); }
+    #error-box { margin-top: 10px; padding: 10px 14px; background: rgba(217, 83, 79, 0.1); color: var(--err); border-radius: 10px; display: none; }
+
+    #results { margin-top: 24px; display: none; }
+    #results h3 { color: var(--ink); }
+
+    .skill-tag { display: inline-block; padding: 3px 10px; margin: 2px; border-radius: 999px; font-size: 0.85em; font-weight: 500; }
+    .skill-matched { background: rgba(139, 214, 80, 0.18); color: var(--green-deep); }
+    .skill-missing { background: rgba(217, 83, 79, 0.12); color: var(--err); }
+
+    .generated-box {
+        white-space: pre-wrap;
+        background: var(--paper-soft);
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.88rem;
+        line-height: 1.55;
+        margin-top: 8px;
+    }
+    #cover-letter-section { margin-top: 20px; display: none; }
+    #cover-letter-btn, #download-pdf-btn {
+        font-family: inherit;
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: var(--ink);
+        background: var(--lime);
+        border: none;
+        padding: 10px 20px;
+        border-radius: 999px;
+        cursor: pointer;
+        margin-top: 8px;
+        transition: background 0.15s ease, transform 0.15s ease;
+    }
+    #cover-letter-btn:hover, #download-pdf-btn:hover { background: var(--lime-deep); transform: translateY(-1px); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    {% url 'dashboard' as dashboard_url %}
+    <div class="banner">
+        {% include "partials/nav.html" with nav_href=dashboard_url nav_label="Back" nav_dark=True %}
+        <div class="banner-body">
+            <span>Application toolkit</span>
+            <h2>Email & Cover Letter Generator</h2>
+        </div>
+    </div>
+
+    <div class="content-wrap content-wrap--wide">
+        <div class="card">
+            <p>Provide your resume and a job description to get a tailored application email, and optionally a full cover letter.</p>
+
+            <form id="analyze-form">
+                <fieldset>
+                    <legend>Resume (required)</legend>
+                    <div class="input-toggle">
+                        <label><input type="radio" name="resume-mode" value="text" checked> Paste text</label>
+                        <label><input type="radio" name="resume-mode" value="file"> Upload file (PDF/TXT)</label>
+                    </div>
+                    <textarea id="resume-text" placeholder="Paste your resume text here..."></textarea>
+                    <input type="file" id="resume-file" accept=".pdf,.txt" style="display:none;">
+                </fieldset>
+
+                <fieldset>
+                    <legend>Job Description (required)</legend>
+                    <div class="input-toggle">
+                        <label><input type="radio" name="jd-mode" value="text" checked> Paste text</label>
+                        <label><input type="radio" name="jd-mode" value="file"> Upload file (PDF/TXT)</label>
+                    </div>
+                    <textarea id="jd-text" placeholder="Paste the job description here..."></textarea>
+                    <input type="file" id="jd-file" accept=".pdf,.txt" style="display:none;">
+                </fieldset>
+
+                <button type="submit">Generate Email</button>
+                <button type="button" id="reset-uploads">Reset Uploads</button>
+            </form>
+
+            <div id="status"></div>
+            <div id="error-box"></div>
+
+            <div id="results">
+                <h3>Matched Skills</h3>
+                <div id="matched-skills"></div>
+
+                <h3>Missing Skills</h3>
+                <div id="missing-skills"></div>
+
+                <h3>Generated Email</h3>
+                <div class="generated-box" id="email-output"></div>
+
+                <button id="cover-letter-btn" type="button">Generate Cover Letter Too</button>
+
+                <div id="cover-letter-section">
+                    <h3>Generated Cover Letter</h3>
+                    <div class="generated-box" id="cover-letter-output"></div>
+                    <button id="download-pdf-btn" type="button">Download as PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Base URL of the merged chatbot + email/cover-letter FastAPI service.
+        const API = "http://127.0.0.1:8001/email-cover";
+
+        const resumeTextEl = document.getElementById("resume-text");
+        const resumeFileEl = document.getElementById("resume-file");
+        const jdTextEl = document.getElementById("jd-text");
+        const jdFileEl = document.getElementById("jd-file");
+
+        const statusEl = document.getElementById("status");
+        const errorBox = document.getElementById("error-box");
+        const resultsEl = document.getElementById("results");
+
+        let lastMatchedSkills = [];
+        let lastJobDescription = "";
+        let lastCoverLetterText = "";
+
+        function wireToggle(name, textEl, fileEl) {
+            document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
+                radio.addEventListener("change", () => {
+                    const useFile = document.querySelector(`input[name="${name}"]:checked`).value === "file";
+                    textEl.style.display = useFile ? "none" : "block";
+                    fileEl.style.display = useFile ? "block" : "none";
+                });
+            });
+        }
+        wireToggle("resume-mode", resumeTextEl, resumeFileEl);
+        wireToggle("jd-mode", jdTextEl, jdFileEl);
+
+        function showError(msg) {
+            errorBox.textContent = msg;
+            errorBox.style.display = "block";
+        }
+        function clearError() {
+            errorBox.style.display = "none";
+            errorBox.textContent = "";
+        }
+
+        function tagList(elId, items, cls) {
+            const el = document.getElementById(elId);
+            el.innerHTML = items && items.length
+                ? items.map(s => `<span class="skill-tag ${cls}">${s}</span>`).join("")
+                : "None";
+        }
+
+        const resetBtn = document.getElementById("reset-uploads");
+        resetBtn.addEventListener("click", () => {
+            // Clear pasted text
+            resumeTextEl.value = "";
+            jdTextEl.value = "";
+
+            // Clear selected files (the reliable way to reset a file input)
+            resumeFileEl.value = "";
+            jdFileEl.value = "";
+
+            // Reset the input-mode radios back to "paste text" (the default)
+            document.querySelector('input[name="resume-mode"][value="text"]').checked = true;
+            document.querySelector('input[name="jd-mode"][value="text"]').checked = true;
+            resumeTextEl.style.display = "block";
+            resumeFileEl.style.display = "none";
+            jdTextEl.style.display = "block";
+            jdFileEl.style.display = "none";
+
+            // Clear any previous results/errors/status
+            clearError();
+            resultsEl.style.display = "none";
+            document.getElementById("cover-letter-section").style.display = "none";
+            statusEl.textContent = "";
+        });
+
+        document.getElementById("analyze-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            clearError();
+            resultsEl.style.display = "none";
+            document.getElementById("cover-letter-section").style.display = "none";
+
+            const resumeMode = document.querySelector('input[name="resume-mode"]:checked').value;
+            const jdMode = document.querySelector('input[name="jd-mode"]:checked').value;
+
+            const formData = new FormData();
+
+            if (resumeMode === "file") {
+                if (!resumeFileEl.files.length) { showError("Please choose a resume file."); return; }
+                formData.append("resume_file", resumeFileEl.files[0]);
+            } else {
+                if (!resumeTextEl.value.trim()) { showError("Please paste your resume text."); return; }
+                formData.append("resume_text", resumeTextEl.value.trim());
+            }
+
+            if (jdMode === "file") {
+                if (!jdFileEl.files.length) { showError("Please choose a job description file."); return; }
+                formData.append("jd_file", jdFileEl.files[0]);
+            } else {
+                if (!jdTextEl.value.trim()) { showError("Please paste the job description."); return; }
+                formData.append("jd_text", jdTextEl.value.trim());
+            }
+
+            statusEl.textContent = "Analyzing resume and job description...";
+
+            try {
+                const res = await fetch(`${API}/analyze`, { method: "POST", body: formData });
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText || `Server responded with ${res.status}`);
+                }
+                const data = await res.json();
+
+                tagList("matched-skills", data.matched_skills, "skill-matched");
+                tagList("missing-skills", data.missing_skills, "skill-missing");
+                document.getElementById("email-output").textContent = data.email;
+
+                lastMatchedSkills = data.matched_skills;
+                lastJobDescription = data.jd_text;
+
+                resultsEl.style.display = "block";
+            } catch (err) {
+                showError(
+                    "Couldn't reach the service, or it returned an error. " +
+                    "Make sure it's running (uvicorn main:app --port 8001). Details: " + err.message
+                );
+            } finally {
+                statusEl.textContent = "";
+            }
+        });
+
+        document.getElementById("cover-letter-btn").addEventListener("click", async () => {
+            clearError();
+            statusEl.textContent = "Generating cover letter...";
+
+            try {
+                const res = await fetch(`${API}/cover-letter`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        matched_skills: lastMatchedSkills,
+                        job_description: lastJobDescription
+                    })
+                });
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText || `Server responded with ${res.status}`);
+                }
+                const data = await res.json();
+                lastCoverLetterText = data.cover_letter;
+                document.getElementById("cover-letter-output").textContent = lastCoverLetterText;
+                document.getElementById("cover-letter-section").style.display = "block";
+            } catch (err) {
+                showError("Couldn't generate the cover letter. Details: " + err.message);
+            } finally {
+                statusEl.textContent = "";
+            }
+        });
+
+        document.getElementById("download-pdf-btn").addEventListener("click", async () => {
+            clearError();
+            statusEl.textContent = "Preparing PDF...";
+
+            try {
+                const res = await fetch(`${API}/cover-letter/pdf`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ cover_letter_text: lastCoverLetterText })
+                });
+                if (!res.ok) {
+                    throw new Error(`Server responded with ${res.status}`);
+                }
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "cover_letter.pdf";
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            } catch (err) {
+                showError("Couldn't download the PDF. Details: " + err.message);
+            } finally {
+                statusEl.textContent = "";
+            }
+        });
+    </script>
+
+{% endblock %}

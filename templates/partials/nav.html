@@ -1,0 +1,16 @@
+<div class="nav-wrap">
+    <nav class="pill">
+        <div class="brand">
+            <span class="brand-dot" aria-hidden="true">🟢</span>
+            <span class="brand-name">Job Assistant</span>
+        </div>
+        {% if nav_secondary_href %}
+        <div class="nav-links">
+            <a class="nav-link" href="{{ nav_secondary_href }}">{{ nav_secondary_label }}</a>
+            <a class="nav-cta{% if nav_dark %} nav-cta--dark{% endif %}" href="{{ nav_href }}">{{ nav_label }}</a>
+        </div>
+        {% else %}
+        <a class="nav-cta{% if nav_dark %} nav-cta--dark{% endif %}" href="{{ nav_href }}">{{ nav_label }}</a>
+        {% endif %}
+    </nav>
+</div>

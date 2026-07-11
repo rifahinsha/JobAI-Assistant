@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Log In | Job Assistant{% endblock %}
+
+{% block extra_style %}
+<style>
+    .auth-wrap { max-width: 440px; margin: 0 auto; padding: 3rem clamp(1.25rem, 4vw, 2rem) 4.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    {# Adjust 'nav_href' below to your landing page's url name if it has one, e.g. {% url 'main' %} #}
+    <div class="banner">
+        {% include "partials/nav.html" with nav_href="/" nav_label="Home" nav_dark=True %}
+        <div class="banner-body">
+            <span>Welcome back</span>
+            <h2>Log In</h2>
+        </div>
+    </div>
+
+    {% if messages %}
+    <ul class="notices">
+        {% for message in messages %}
+            <li data-tag="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="auth-wrap">
+        <div class="card">
+            <form action="{% url 'login' %}" method="post">
+                {% csrf_token %}
+
+                <div class="field-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                </div>
+
+                <div class="field-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                </div>
+
+                <div class="actions actions--stretch">
+                    <button type="submit">Log In</button>
+                </div>
+            </form>
+
+            <p class="muted-note">Don't have an account? <a href="{% url 'signup' %}">Sign Up</a></p>
+        </div>
+    </div>
+
+{% endblock %}

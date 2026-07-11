@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Job Assistant — AI-Powered Career Companion{% endblock %}
+
+{% block extra_style %}
+<style>
+    .hero {
+        position: relative;
+        background: linear-gradient(160deg, var(--green-mid) 0%, var(--green-deep) 75%);
+        padding-bottom: 4.5rem;
+        overflow: hidden;
+    }
+    .hero-body {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 3.2rem clamp(1.25rem, 4vw, 2rem) 0;
+        text-align: center;
+    }
+    .eyebrow-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: rgba(139, 214, 80, 0.16);
+        color: var(--lime);
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.4rem 0.9rem;
+        border-radius: 999px;
+        margin-bottom: 1.4rem;
+    }
+    .hero-body h1 {
+        color: #fff;
+        font-size: clamp(1.8rem, 4.4vw, 2.7rem);
+        font-weight: 700;
+        line-height: 1.25;
+        margin: 0 0 1rem;
+    }
+    .hero-body h1 span { color: var(--lime); }
+    .hero-body p {
+        color: rgba(255, 255, 255, 0.75);
+        max-width: 52ch;
+        margin: 0 auto 1.8rem;
+        font-size: 1rem;
+    }
+    .hero-actions { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; }
+
+    /* ---------- Features ---------- */
+    .features-section { max-width: 1000px; margin: 0 auto; padding: 3rem clamp(1.25rem, 4vw, 2rem) 4.5rem; }
+    .features-heading { text-align: center; margin-bottom: 2.2rem; }
+    .features-heading span {
+        display: inline-block;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--lime-deep);
+        margin-bottom: 0.5rem;
+    }
+    .features-heading h2 { font-size: clamp(1.3rem, 2.8vw, 1.7rem); font-weight: 700; margin: 0; color: var(--ink); }
+
+    .feature-grid {
+        list-style: none;
+        margin: 0; padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 1.4rem;
+    }
+    .feature-card {
+        background: var(--paper-soft);
+        border-radius: 18px;
+        padding: 1.7rem 1.5rem;
+    }
+    .feature-icon {
+        width: 46px; height: 46px;
+        border-radius: 12px;
+        background: var(--green-deep);
+        color: var(--lime);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem;
+        margin-bottom: 1.1rem;
+    }
+    .feature-card h3 { font-size: 1.05rem; font-weight: 600; margin: 0 0 0.6rem; }
+    .feature-card ul { margin: 0; padding-left: 1.1rem; font-size: 0.9rem; color: var(--ink-soft); line-height: 1.6; }
+
+    /* ---------- Closing CTA ---------- */
+    .closing-cta {
+        max-width: 640px;
+        margin: 0 auto 4.5rem;
+        text-align: center;
+    }
+    .closing-cta h3 { font-size: 1.3rem; font-weight: 700; margin: 0 0 1.2rem; }
+    .closing-cta .hero-actions { justify-content: center; }
+    .closing-cta .btn-ghost { color: var(--ink); border-color: var(--border); }
+    .closing-cta .btn-ghost:hover { border-color: var(--green-deep); color: var(--green-deep); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    <div class="hero">
+        {% url 'signup' as signup_url %}
+        {% url 'login' as login_url %}
+        {% include "partials/nav.html" with nav_href=signup_url nav_label="Sign Up" nav_secondary_href=login_url nav_secondary_label="Log In" %}
+
+        <div class="hero-body">
+            <span class="eyebrow-pill">● AI Career Companion</span>
+            <h1>Your AI-powered companion for the <span>job search</span></h1>
+            <p>Chat with an AI career coach, check your resume against job descriptions, save listings you're interested in, and avoid scam postings — all in one place.</p>
+            <div class="hero-actions">
+                <a class="btn-lime" href="{% url 'signup' %}">Create an Account</a>
+                <a class="btn-ghost" href="{% url 'login' %}">Log In</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="features-section">
+        <div class="features-heading">
+            <span>What you can do</span>
+            <h2>Everything you need in one toolkit</h2>
+        </div>
+        <ul class="feature-grid">
+            <li class="feature-card">
+                <span class="feature-icon" aria-hidden="true">💬</span>
+                <h3>AI Chatbot</h3>
+                <ul>
+                    <li>Instant answers on resumes, interviews, salary negotiation, and career growth.</li>
+                </ul>
+            </li>
+            <li class="feature-card">
+                <span class="feature-icon" aria-hidden="true">📄</span>
+                <h3>ATS Resume Analyzer</h3>
+                <ul>
+                    <li>Compare your resume with any job description.</li>
+                    <li>Spot missing skills and keywords.</li>
+                    <li>Get an ATS compatibility score.</li>
+                </ul>
+            </li>
+            <li class="feature-card">
+                <span class="feature-icon" aria-hidden="true">🧭</span>
+                <h3>Saved Jobs</h3>
+                <ul>
+                    <li>Bookmark interesting jobs.</li>
+                    <li>Organize them into lists.</li>
+                    <li>Track application deadlines.</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <div class="content-wrap" style="padding-top: 0;">
+        <div class="card closing-cta">
+            <h3>Ready to take the next step in your career?</h3>
+            <div class="hero-actions">
+                <a class="btn-lime" href="{% url 'signup' %}">Create an Account</a>
+                <a class="btn-ghost" href="{% url 'login' %}">Log In</a>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

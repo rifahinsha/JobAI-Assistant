@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Dashboard | Job Assistant{% endblock %}
+
+{% block extra_style %}
+<style>
+    /* ---------- Hero ---------- */
+    .hero {
+        position: relative;
+        background: linear-gradient(160deg, var(--green-mid) 0%, var(--green-deep) 75%);
+        padding-bottom: 5.5rem;
+        overflow: hidden;
+    }
+
+    .hero-body {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 3.5rem clamp(1.25rem, 4vw, 2rem) 0;
+        text-align: center;
+        position: relative;
+    }
+
+    .eyebrow-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        background: rgba(139, 214, 80, 0.16);
+        color: var(--lime);
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.4rem 0.9rem;
+        border-radius: 999px;
+        margin-bottom: 1.4rem;
+    }
+
+    .hero-body h1 {
+        color: #fff;
+        font-size: clamp(1.9rem, 4.8vw, 2.9rem);
+        font-weight: 700;
+        line-height: 1.2;
+        margin: 0 0 0.9rem;
+    }
+    .hero-body h1 span { color: var(--lime); }
+
+    .hero-body p {
+        color: rgba(255, 255, 255, 0.75);
+        max-width: 46ch;
+        margin: 0 auto 1.8rem;
+        font-size: 1rem;
+    }
+
+    .hero-actions { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; }
+    .btn-lime, .btn-ghost {
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.92rem;
+        padding: 0.75rem 1.6rem;
+        border-radius: 999px;
+        transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+    }
+    .btn-lime { background: var(--lime); color: var(--ink); }
+    .btn-lime:hover, .btn-lime:focus-visible { background: var(--lime-deep); transform: translateY(-1px); }
+    .btn-ghost { background: transparent; color: #fff; border: 1.5px solid rgba(255,255,255,0.35); }
+    .btn-ghost:hover, .btn-ghost:focus-visible { border-color: var(--lime); color: var(--lime); }
+
+    /* floating bubbles like the reference hero */
+    .bubble {
+        position: absolute;
+        width: 54px; height: 54px;
+        border-radius: 50%;
+        background: var(--paper);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        box-shadow: 0 10px 22px -10px rgba(0,0,0,0.4);
+    }
+    .bubble.b1 { top: 6%; left: 4%; }
+    .bubble.b2 { top: 32%; right: 3%; }
+    .bubble.b3 { bottom: 6%; left: 10%; }
+    .bubble.b4 { bottom: -4%; right: 12%; }
+    @media (max-width: 760px) { .bubble { display: none; } }
+
+    /* wave divider */
+    .wave { position: absolute; bottom: -1px; left: 0; width: 100%; line-height: 0; }
+    .wave svg { width: 100%; height: 60px; display: block; }
+
+    /* notices sit differently on this page (wider, closer to hero) */
+    .notices { margin: -3rem auto 0; max-width: 1000px; }
+
+    /* ---------- Tools section ---------- */
+    .tools-section { max-width: 1100px; margin: 0 auto; padding: 3rem clamp(1.25rem, 4vw, 2rem) 4.5rem; }
+    .tools-heading { text-align: center; margin-bottom: 2.2rem; }
+    .tools-heading span {
+        display: inline-block;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--lime-deep);
+        margin-bottom: 0.5rem;
+    }
+    .tools-heading h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 700; margin: 0; color: var(--ink); }
+
+    .tool-grid {
+        list-style: none;
+        margin: 0; padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 1.4rem;
+    }
+    .tool-card {
+        position: relative;
+        display: block;
+        background: var(--paper-soft);
+        border-radius: 18px;
+        padding: 1.7rem 1.5rem 1.9rem;
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+    .tool-card:hover, .tool-card:focus-visible {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 32px -18px rgba(22, 60, 44, 0.4);
+        background: #fff;
+    }
+    .tool-card:focus-visible { outline: 2px solid var(--green-mid); outline-offset: 2px; }
+    .tool-icon {
+        width: 46px; height: 46px;
+        border-radius: 12px;
+        background: var(--green-deep);
+        color: var(--lime);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem;
+        margin-bottom: 1.1rem;
+    }
+    .tool-card h3 { font-size: 1.08rem; font-weight: 600; margin: 0 0 0.4rem; }
+    .tool-card p { font-size: 0.88rem; color: var(--ink-soft); margin: 0; line-height: 1.45; }
+    .tool-arrow {
+        position: absolute; bottom: 1.6rem; right: 1.5rem;
+        width: 30px; height: 30px; border-radius: 50%;
+        background: var(--lime);
+        color: var(--ink);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.9rem;
+        transition: transform 0.18s ease;
+    }
+    .tool-card:hover .tool-arrow, .tool-card:focus-visible .tool-arrow { transform: translate(2px, -2px); }
+
+    .tool-card.is-disabled { cursor: default; opacity: 0.7; }
+    .tool-card.is-disabled .tool-icon { background: #D9DFDA; color: var(--ink-soft); }
+    .tool-card.is-disabled .tool-arrow { background: #D9DFDA; color: var(--ink-soft); }
+    .soon-tag {
+        position: absolute; top: 1.4rem; right: 1.4rem;
+        font-size: 0.62rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+        background: #E7ECE8; color: var(--ink-soft);
+        padding: 0.25rem 0.6rem; border-radius: 999px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    {% url 'profile' as profile_url %}
+    <div class="hero">
+        {% include "partials/nav.html" with nav_href=profile_url nav_label="Profile" %}
+
+        <div class="hero-body">
+            <span class="bubble b1" aria-hidden="true">💬</span>
+            <span class="bubble b2" aria-hidden="true">📄</span>
+            <span class="bubble b3" aria-hidden="true">✉️</span>
+            <span class="bubble b4" aria-hidden="true">🧭</span>
+
+            <span class="eyebrow-pill">● Dashboard</span>
+            <h1>Welcome back, <span>{{ user.first_name }}</span></h1>
+            <p>Here's what you can do today — pick up where you left off or start something new.</p>
+        </div>
+
+        <div class="wave" aria-hidden="true">
+            <svg viewBox="0 0 1440 60" preserveAspectRatio="none">
+                <path d="M0,32 C240,64 480,0 720,20 C960,40 1200,64 1440,28 L1440,60 L0,60 Z" fill="#FFFFFF"></path>
+            </svg>
+        </div>
+    </div>
+
+    {% if messages %}
+    <ul class="notices">
+        {% for message in messages %}
+            <li data-tag="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="tools-section">
+        <div class="tools-heading">
+            <span>Your toolkit</span>
+            <h2>Everything you need for your job search</h2>
+        </div>
+        <ul class="tool-grid">
+            <li>
+                <a class="tool-card" href="{% url 'chatbot' %}">
+                    <span class="tool-icon" aria-hidden="true">💬</span>
+                    <h3>Chatbot</h3>
+                    <p>Ask career, Interview hacks or job-related questions.</p>
+                    <span class="tool-arrow" aria-hidden="true">→</span>
+                </a>
+            </li>
+            <li>
+                <a class="tool-card" href="{% url 'ats_analyzer' %}">
+                    <span class="tool-icon" aria-hidden="true">📄</span>
+                    <h3>ATS Analyzer</h3>
+                    <p>Check how well your resume matches a job description.</p>
+                    <span class="tool-arrow" aria-hidden="true">→</span>
+                </a>
+            </li>
+            <li>
+                <a class="tool-card" href="{% url 'email_cv' %}">
+                    <span class="tool-icon" aria-hidden="true">✉️</span>
+                    <h3>Mail & Cover Letter Generator</h3>
+                    <p>Generate a tailored  mail & cover letter instantly.</p>
+                    <span class="tool-arrow" aria-hidden="true">→</span>
+                </a>
+            </li>
+            <li>
+                <a class="tool-card" href="{% url 'job_openings' %}">
+                    <span class="tool-icon" aria-hidden="true">🧭</span>
+                    <h3>Job Openings</h3>
+                    <p>Browse relevant openings.</p>
+                    <span class="tool-arrow" aria-hidden="true">→</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+{% endblock %}

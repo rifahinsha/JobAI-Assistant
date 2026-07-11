@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Job Openings | Job Assistant{% endblock %}
+
+{% block extra_style %}
+<style>
+    .search-bar { display: flex; gap: 8px; margin: 16px 0; flex-wrap: wrap; }
+    .search-bar input {
+        flex: 1; min-width: 180px; padding: 0.75rem 1rem; font-family: inherit; font-size: 0.92rem;
+        border: 1.5px solid var(--border); border-radius: 999px; background: var(--paper-soft);
+    }
+    .search-bar input:focus { outline: none; border-color: var(--lime-deep); background: #fff; }
+    .search-bar button {
+        padding: 0.75rem 1.4rem; border-radius: 999px; border: none;
+        background: var(--lime); color: var(--ink); font-weight: 600; font-family: inherit; cursor: pointer;
+        transition: background 0.15s ease;
+    }
+    .search-bar button:hover { background: var(--lime-deep); }
+
+    #status { font-size: 0.9em; color: var(--ink-soft); margin-bottom: 10px; }
+    #error-box { padding: 10px 14px; background: rgba(217, 83, 79, 0.1); color: var(--err); border-radius: 10px; display: none; margin-bottom: 10px; }
+
+    .job-card { border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px; background: var(--paper-soft); }
+    .job-card h3 { margin: 0 0 4px 0; font-size: 1.05rem; }
+    .job-meta { color: var(--ink-soft); font-size: 0.9em; margin-bottom: 8px; }
+    .job-desc { font-size: 0.9em; color: var(--ink); max-height: 4.5em; overflow: hidden; margin-bottom: 8px; }
+    .job-salary { font-size: 0.85em; color: var(--green-deep); font-weight: 600; margin-bottom: 8px; }
+    .job-actions { display: flex; gap: 8px; align-items: center; }
+    .job-actions a, .job-actions button {
+        display: inline-block; padding: 0.5rem 1.2rem; background: var(--lime);
+        color: var(--ink); text-decoration: none; border-radius: 999px; font-size: 0.88em; font-weight: 600;
+        transition: background 0.15s ease; border: none; cursor: pointer; font-family: inherit;
+    }
+    .job-actions a:hover { background: var(--lime-deep); }
+    .save-btn { background: transparent; border: 1.5px solid var(--border) !important; color: var(--ink); }
+    .save-btn:hover { background: var(--paper-soft); }
+    .save-btn.is-saved { background: var(--green-deep, #2e7d32) !important; color: #fff; cursor: default; }
+    .save-btn:disabled { opacity: 0.7; cursor: default; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    {% url 'dashboard' as dashboard_url %}
+    <div class="banner">
+        {% include "partials/nav.html" with nav_href=dashboard_url nav_label="Back to Dashboard" nav_dark=True %}
+        <div class="banner-body">
+            <span>Browse listings</span>
+            <h2>Job Openings</h2>
+        </div>
+    </div>
+
+    <div class="content-wrap content-wrap--wide">
+        <div class="card">
+            <div class="search-bar">
+                <input type="text" id="keyword" placeholder="Job title (e.g. Python developer)">
+                <input type="text" id="location" placeholder="Location (e.g. Bengaluru)">
+                <button id="search-btn">Search</button>
+            </div>
+
+            <div id="status"></div>
+            <div id="error-box"></div>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Base URL of the Jobs FastAPI service.
+        const JOBS_API = "http://127.0.0.1:8003";
+
+        const keywordEl = document.getElementById("keyword");
+        const locationEl = document.getElementById("location");
+        const searchBtn = document.getElementById("search-btn");
+        const statusEl = document.getElementById("status");
+        const errorBox = document.getElementById("error-box");
+        const resultsEl = document.getElementById("results");
+
+        // Django's standard cookie-based CSRF token lookup.
+        function getCookie(name) {
+            const match = document.cookie.match(new RegExp("(^|; )" + name + "=([^;]*)"));
+            return match ? decodeURIComponent(match[2]) : null;
+        }
+
+        async function saveJob(job, btn) {
+            btn.disabled = true;
+            const originalLabel = btn.textContent;
+            btn.textContent = "Saving...";
+
+            try {
+                const res = await fetch("{% url 'save_job' %}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCookie("csrftoken"),
+                    },
+                    body: JSON.stringify(job),
+                });
+
+                if (!res.ok) {
+                    throw new Error(`Server responded with ${res.status}`);
+                }
+
+                const data = await res.json();
+                btn.classList.add("is-saved");
+                btn.textContent = data.status === "already_saved" ? "Saved" : "Saved ✓";
+            } catch (err) {
+                btn.disabled = false;
+                btn.textContent = originalLabel;
+                showError("Couldn't save this job. " + err.message);
+            }
+        }
+
+        function showError(msg) {
+            errorBox.textContent = msg;
+            errorBox.style.display = "block";
+        }
+        function clearError() {
+            errorBox.style.display = "none";
+            errorBox.textContent = "";
+        }
+
+        async function fetchJobs() {
+            clearError();
+            resultsEl.innerHTML = "";
+            const keyword = keywordEl.value.trim() || "developers";
+            const location = locationEl.value.trim();
+
+            statusEl.textContent = "Searching...";
+
+            try {
+                const url = `${JOBS_API}/api/jobs?keyword=${encodeURIComponent(keyword)}&location=${encodeURIComponent(location)}`;
+                const res = await fetch(url);
+
+                if (!res.ok) {
+                    throw new Error(`Server responded with ${res.status}`);
+                }
+
+                const data = await res.json();
+                statusEl.textContent = `${data.count ?? data.jobs.length} results found`;
+
+                if (!data.jobs.length) {
+                    resultsEl.innerHTML = "<p>No jobs found. Try a different search.</p>";
+                    return;
+                }
+
+                data.jobs.forEach(job => {
+                    const card = document.createElement("div");
+                    card.className = "job-card";
+
+                    let salaryHtml = "";
+                    if (job.salary_min || job.salary_max) {
+                        const lo = job.salary_min ? Math.round(job.salary_min).toLocaleString() : "?";
+                        const hi = job.salary_max ? Math.round(job.salary_max).toLocaleString() : "?";
+                        salaryHtml = `<div class="job-salary">Salary: ₹${lo} - ₹${hi}</div>`;
+                    }
+
+                    card.innerHTML = `
+                        <h3>${job.title || "Untitled role"}</h3>
+                        <div class="job-meta">${job.company || "Unknown company"} — ${job.location || "Location not specified"}</div>
+                        ${salaryHtml}
+                        <div class="job-desc">${job.description || ""}</div>
+                        <div class="job-actions">
+                            <a href="${job.url}" target="_blank" rel="noopener">Apply</a>
+                            <button type="button" class="save-btn">Save</button>
+                        </div>
+                    `;
+
+                    card.querySelector(".save-btn").addEventListener("click", (e) => {
+                        saveJob(job, e.currentTarget);
+                    });
+
+                    resultsEl.appendChild(card);
+                });
+            } catch (err) {
+                showError(
+                    "Couldn't reach the jobs service, or it returned an error. " +
+                    "Make sure it's running (uvicorn main:app --port 8003). " +
+                    "Details: " + err.message
+                );
+            } finally {
+                statusEl.textContent = statusEl.textContent === "Searching..." ? "" : statusEl.textContent;
+            }
+        }
+
+        searchBtn.addEventListener("click", fetchJobs);
+        keywordEl.addEventListener("keydown", e => { if (e.key === "Enter") fetchJobs(); });
+        locationEl.addEventListener("keydown", e => { if (e.key === "Enter") fetchJobs(); });
+
+        // Load a default search on page load so it's not empty.
+        fetchJobs();
+    </script>
+
+{% endblock %}

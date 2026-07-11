@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}ATS Resume Analyzer | Job Assistant{% endblock %}
+
+{% block extra_style %}
+<style>
+    fieldset { margin-bottom: 16px; border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--paper-soft); }
+    legend { font-weight: 600; font-size: 0.9rem; padding: 0 6px; color: var(--ink); }
+    .input-toggle { margin-bottom: 8px; }
+    .input-toggle label { margin-right: 16px; font-weight: normal; font-size: 0.9rem; color: var(--ink-soft); display: inline; }
+    textarea {
+        width: 100%; min-height: 120px; box-sizing: border-box;
+        font-family: inherit; font-size: 0.92rem;
+        border: 1.5px solid var(--border); border-radius: 10px;
+        padding: 0.7rem 0.9rem; background: #fff; color: var(--ink);
+    }
+    textarea:focus { outline: none; border-color: var(--lime-deep); }
+    input[type="file"] { margin-top: 6px; font-size: 0.85rem; }
+
+    #ats-form button[type="submit"] { padding: 10px 20px; font-size: 0.95rem; margin-top: 8px; }
+    #reset-uploads {
+        padding: 10px 20px; font-size: 0.9rem; margin-top: 8px; margin-left: 10px;
+        background: transparent; color: var(--ink-soft);
+        border: 1.5px solid var(--border); border-radius: 999px; cursor: pointer;
+        font-family: inherit; font-weight: 600;
+        transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    #reset-uploads:hover { border-color: var(--green-deep); color: var(--green-deep); }
+    #status { margin-top: 10px; font-size: 0.9em; color: var(--ink-soft); }
+    #error-box { margin-top: 10px; padding: 10px 14px; background: rgba(217, 83, 79, 0.1); color: var(--err); border-radius: 10px; display: none; }
+
+    #results { margin-top: 24px; display: none; }
+    #results h3, #results h4 { color: var(--ink); }
+    .score-row { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+    .score-number { font-size: 2em; font-weight: 700; color: var(--green-deep); }
+    .rating-badge { padding: 4px 10px; border-radius: 999px; font-weight: 600; font-size: 0.85rem; color: white; }
+    .rating-Excellent { background: var(--lime-deep); color: var(--ink); }
+    .rating-Good { background: #A9D98B; color: var(--ink); }
+    .rating-Fair { background: #f9a825; }
+    .rating-Weak { background: var(--err); }
+
+    .bar-track { background: var(--border); border-radius: 4px; height: 10px; flex: 1; overflow: hidden; }
+    .bar-fill { background: var(--lime-deep); height: 100%; }
+
+    .category-row { margin-bottom: 10px; }
+    .category-name { display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 3px; }
+
+    .skills-group { margin-bottom: 10px; }
+    .skill-tag { display: inline-block; padding: 3px 10px; margin: 2px; border-radius: 999px; font-size: 0.85em; font-weight: 500; }
+    .skill-matched { background: rgba(139, 214, 80, 0.18); color: var(--green-deep); }
+    .skill-partial { background: #fff3cd; color: #8a6500; }
+    .skill-missing { background: rgba(217, 83, 79, 0.12); color: var(--err); }
+
+    .action-item { margin-bottom: 10px; padding: 10px 12px; border-left: 4px solid var(--border); background: var(--paper-soft); border-radius: 0 10px 10px 0; }
+    .priority-High { border-left-color: var(--err); }
+    .priority-Medium { border-left-color: #f9a825; }
+    .priority-Low { border-left-color: var(--lime-deep); }
+    .priority-label { font-weight: 600; font-size: 0.85em; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    {% url 'dashboard' as dashboard_url %}
+    <div class="banner">
+        {% include "partials/nav.html" with nav_href=dashboard_url nav_label="Back" nav_dark=True %}
+        <div class="banner-body">
+            <span>Resume check</span>
+            <h2>ATS Resume Analyzer</h2>
+        </div>
+    </div>
+
+    <div class="content-wrap content-wrap--wide">
+        <div class="card">
+            <p>Paste or upload your resume, optionally add a job description, and get an ATS compatibility score.</p>
+
+            <form id="ats-form">
+                <fieldset>
+                    <legend>Resume (required)</legend>
+                    <div class="input-toggle">
+                        <label><input type="radio" name="resume-mode" value="text" checked> Paste text</label>
+                        <label><input type="radio" name="resume-mode" value="file"> Upload file (PDF/DOCX/TXT)</label>
+                    </div>
+                    <textarea id="resume-text" placeholder="Paste your resume text here..."></textarea>
+                    <input type="file" id="resume-file" accept=".pdf,.docx,.txt" style="display:none;">
+                </fieldset>
+
+                <fieldset>
+                    <legend>Job Description (optional — leave blank for a general resume check)</legend>
+                    <div class="input-toggle">
+                        <label><input type="radio" name="jd-mode" value="text" checked> Paste text</label>
+                        <label><input type="radio" name="jd-mode" value="file"> Upload file (PDF/DOCX/TXT)</label>
+                    </div>
+                    <textarea id="jd-text" placeholder="Paste the job description here (optional)..."></textarea>
+                    <input type="file" id="jd-file" accept=".pdf,.docx,.txt" style="display:none;">
+                </fieldset>
+
+                <button type="submit">Analyze Resume</button>
+                <button type="button" id="reset-uploads">Reset Uploads</button>
+            </form>
+
+            <div id="status"></div>
+            <div id="error-box"></div>
+
+            <div id="results">
+                <h3>Results</h3>
+                <div class="score-row">
+                    <span class="score-number" id="score-number"></span>
+                    <span>/ 100</span>
+                    <span class="rating-badge" id="rating-badge"></span>
+                </div>
+                <div class="bar-track" style="margin-bottom:16px;"><div class="bar-fill" id="score-bar"></div></div>
+
+                <p id="summary"></p>
+
+                <h4>Stats</h4>
+                <ul id="stats-list"></ul>
+
+                <h4>Category Breakdown</h4>
+                <div id="categories"></div>
+
+                <h4>Skills</h4>
+                <div class="skills-group"><strong>Matched:</strong> <span id="skills-matched"></span></div>
+                <div class="skills-group"><strong>Partial:</strong> <span id="skills-partial"></span></div>
+                <div class="skills-group"><strong>Missing:</strong> <span id="skills-missing"></span></div>
+
+                <h4>Action Plan</h4>
+                <div id="action-plan"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Base URL of the ATS FastAPI service.
+        const ATS_API = "http://127.0.0.1:8002";
+
+        const form = document.getElementById("ats-form");
+        const statusEl = document.getElementById("status");
+        const errorBox = document.getElementById("error-box");
+        const resultsEl = document.getElementById("results");
+
+        const resumeTextEl = document.getElementById("resume-text");
+        const resumeFileEl = document.getElementById("resume-file");
+        const jdTextEl = document.getElementById("jd-text");
+        const jdFileEl = document.getElementById("jd-file");
+
+        // Toggle text/file inputs based on radio selection
+        function wireToggle(name, textEl, fileEl) {
+            document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
+                radio.addEventListener("change", () => {
+                    const useFile = document.querySelector(`input[name="${name}"]:checked`).value === "file";
+                    textEl.style.display = useFile ? "none" : "block";
+                    fileEl.style.display = useFile ? "block" : "none";
+                });
+            });
+        }
+        wireToggle("resume-mode", resumeTextEl, resumeFileEl);
+        wireToggle("jd-mode", jdTextEl, jdFileEl);
+
+        function showError(msg) {
+            errorBox.textContent = msg;
+            errorBox.style.display = "block";
+        }
+
+        function clearError() {
+            errorBox.style.display = "none";
+            errorBox.textContent = "";
+        }
+
+        function barHtml(score) {
+            return `<div class="bar-track"><div class="bar-fill" style="width:${score}%;"></div></div>`;
+        }
+
+        function renderResults(data) {
+            resultsEl.style.display = "block";
+
+            document.getElementById("score-number").textContent = data.ats_score;
+            const badge = document.getElementById("rating-badge");
+            badge.textContent = data.rating;
+            badge.className = "rating-badge rating-" + data.rating;
+            document.getElementById("score-bar").style.width = data.ats_score + "%";
+
+            document.getElementById("summary").textContent = data.summary;
+
+            const stats = data.stats;
+            document.getElementById("stats-list").innerHTML = `
+                <li>Keywords matched: ${stats.matched_keywords} / ${stats.total_keywords}</li>
+                <li>Experience match: ${stats.years_experience_match}</li>
+                <li>Education match: ${stats.education_match}</li>
+            `;
+
+            const catsEl = document.getElementById("categories");
+            catsEl.innerHTML = "";
+            data.categories.forEach(cat => {
+                const div = document.createElement("div");
+                div.className = "category-row";
+                div.innerHTML = `
+                    <div class="category-name"><span>${cat.name}</span><span>${cat.score}%</span></div>
+                    ${barHtml(cat.score)}
+                    <small>${cat.note}</small>
+                `;
+                catsEl.appendChild(div);
+            });
+
+            function tagList(elId, items, cls) {
+                const el = document.getElementById(elId);
+                el.innerHTML = items && items.length
+                    ? items.map(s => `<span class="skill-tag ${cls}">${s}</span>`).join("")
+                    : "None";
+            }
+            tagList("skills-matched", data.skills.matched, "skill-matched");
+            tagList("skills-partial", data.skills.partial, "skill-partial");
+            tagList("skills-missing", data.skills.missing, "skill-missing");
+
+            const planEl = document.getElementById("action-plan");
+            planEl.innerHTML = "";
+            data.action_plan.forEach(item => {
+                const div = document.createElement("div");
+                div.className = "action-item priority-" + item.priority;
+                div.innerHTML = `
+                    <div class="priority-label">[${item.priority}] ${item.action}</div>
+                    <div>${item.impact}</div>
+                `;
+                planEl.appendChild(div);
+            });
+        }
+
+        const resetBtn = document.getElementById("reset-uploads");
+        resetBtn.addEventListener("click", () => {
+            // Clear pasted text
+            resumeTextEl.value = "";
+            jdTextEl.value = "";
+
+            // Clear selected files (the reliable way to reset a file input)
+            resumeFileEl.value = "";
+            jdFileEl.value = "";
+
+            // Reset the input-mode radios back to "paste text" (the default)
+            document.querySelector('input[name="resume-mode"][value="text"]').checked = true;
+            document.querySelector('input[name="jd-mode"][value="text"]').checked = true;
+            resumeTextEl.style.display = "block";
+            resumeFileEl.style.display = "none";
+            jdTextEl.style.display = "block";
+            jdFileEl.style.display = "none";
+
+            // Clear any previous results/errors/status
+            clearError();
+            resultsEl.style.display = "none";
+            statusEl.textContent = "";
+        });
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            clearError();
+            resultsEl.style.display = "none";
+
+            const resumeMode = document.querySelector('input[name="resume-mode"]:checked').value;
+            const jdMode = document.querySelector('input[name="jd-mode"]:checked').value;
+
+            const formData = new FormData();
+
+            if (resumeMode === "file") {
+                if (!resumeFileEl.files.length) {
+                    showError("Please choose a resume file.");
+                    return;
+                }
+                formData.append("resume_file", resumeFileEl.files[0]);
+            } else {
+                if (!resumeTextEl.value.trim()) {
+                    showError("Please paste your resume text.");
+                    return;
+                }
+                formData.append("resume_text", resumeTextEl.value.trim());
+            }
+
+            if (jdMode === "file" && jdFileEl.files.length) {
+                formData.append("jd_file", jdFileEl.files[0]);
+            } else if (jdMode === "text" && jdTextEl.value.trim()) {
+                formData.append("jd_text", jdTextEl.value.trim());
+            }
+            // If JD is left completely blank, the backend runs resume-only scoring.
+
+            statusEl.textContent = "Analyzing... this can take a few seconds.";
+
+            try {
+                const res = await fetch(`${ATS_API}/analyze/mixed`, {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!res.ok) {
+                    const errText = await res.text();
+                    throw new Error(errText || `Server responded with ${res.status}`);
+                }
+
+                const payload = await res.json();
+                renderResults(payload.data);
+            } catch (err) {
+                showError(
+                    "Couldn't reach the ATS service, or it returned an error. " +
+                    "Make sure it's running (uvicorn main:app --port 8002). " +
+                    "Details: " + err.message
+                );
+            } finally {
+                statusEl.textContent = "";
+            }
+        });
+    </script>
+
+{% endblock %}
