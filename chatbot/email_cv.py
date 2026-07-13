@@ -1,47 +1,26 @@
 """
-email_cv.py — FastAPI router for the Email & Cover Letter Generator feature.
+email_cv.py — Email & Cover Letter Generator helpers.
 
-Place this file in your chatbot/ folder, next to main.py.
-main.py already does:
-
-    from email_cv import router as email_cv_router
-    app.include_router(email_cv_router)
-
-Endpoints (all under /email-cover, matching email_cv.html's `API` const):
-  POST /email-cover/analyze            -> matched/missing skills + email
-  POST /email-cover/cover-letter       -> cover letter text
-  POST /email-cover/cover-letter/pdf   -> cover letter PDF (binary)
-
-Ported from the standalone AI_Job_Assistant script:
-- Same skill extraction / matching / email / cover letter prompts (Groq,
-  llama-3.1-8b-instant).
-- read_resume() now accepts raw bytes (from an uploaded PDF) instead of a
-  filesystem path.
-- PDF generation happens in memory (BytesIO) and is streamed back directly,
-  instead of being written to output/cover_letter.pdf on disk.
+Plain functions used by chatbot/views.py (previously a standalone FastAPI
+router; the HTTP layer now lives in views.py so this module has no
+FastAPI/pydantic dependency).
 """
 import io
 import json
 import os
+from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
-from fastapi.responses import Response
-from pydantic import BaseModel
-from pypdf import PdfReader
 from groq import Groq
 from dotenv import load_dotenv
+from pypdf import PdfReader
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
-load_dotenv()
-
-router = APIRouter(prefix="/email-cover", tags=["email-cover"])
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 MODEL = "llama-3.1-8b-instant"
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-
-# ---------- helpers (ported from the standalone script) ----------
 
 def read_pdf_bytes(data: bytes) -> str:
     reader = PdfReader(io.BytesIO(data))
@@ -169,70 +148,15 @@ def cover_letter_pdf_bytes(text: str) -> bytes:
     return buffer.read()
 
 
-async def _resolve_text(text_field: str | None, file_field: UploadFile | None, label: str) -> str:
+def resolve_text(text_field: str | None, file_field, label: str) -> str:
     """email_cv.html sends EITHER a *_text form field OR a *_file upload."""
     if file_field is not None:
-        raw = await file_field.read()
-        if file_field.filename.lower().endswith(".pdf"):
+        raw = file_field.read()
+        if file_field.name.lower().endswith(".pdf"):
             return read_pdf_bytes(raw)
         return raw.decode("utf-8", errors="ignore")
 
     if text_field and text_field.strip():
         return text_field.strip()
 
-    raise HTTPException(status_code=400, detail=f"Missing {label} (provide text or a file).")
-
-
-# ---------- request/response models for the JSON endpoints ----------
-
-class CoverLetterRequest(BaseModel):
-    matched_skills: list[str]
-    job_description: str
-
-
-class CoverLetterPdfRequest(BaseModel):
-    cover_letter_text: str
-
-
-# ---------- routes ----------
-
-@router.post("/analyze")
-async def analyze(
-    resume_text: str | None = Form(default=None),
-    jd_text: str | None = Form(default=None),
-    resume_file: UploadFile | None = File(default=None),
-    jd_file: UploadFile | None = File(default=None),
-):
-    resume = await _resolve_text(resume_text, resume_file, "resume")
-    job_description = await _resolve_text(jd_text, jd_file, "job description")
-
-    resume_skills = extract_skills(resume)
-    jd_skills = extract_skills(job_description)
-    matched, missing = compare_skills(resume_skills, jd_skills)
-    email = generate_email(matched, job_description)
-
-    return {
-        "matched_skills": matched,
-        "missing_skills": missing,
-        "email": email,
-        "jd_text": job_description,
-    }
-
-
-@router.post("/cover-letter")
-def cover_letter(req: CoverLetterRequest):
-    text = generate_cover_letter(req.matched_skills, req.job_description)
-    return {"cover_letter": text}
-
-
-@router.post("/cover-letter/pdf")
-def cover_letter_pdf(req: CoverLetterPdfRequest):
-    if not req.cover_letter_text.strip():
-        raise HTTPException(status_code=400, detail="cover_letter_text is empty")
-
-    pdf_bytes = cover_letter_pdf_bytes(req.cover_letter_text)
-    return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
-        headers={"Content-Disposition": 'attachment; filename="cover_letter.pdf"'},
-    )
+    raise ValueError(f"Missing {label} (provide text or a file).")

@@ -2,7 +2,7 @@ import requests
 import sys
 import json
 
-API_URL = "http://127.0.0.1:8002/analyze/files"
+API_URL = "http://127.0.0.1:8000/ats-api/analyze/files"
 
 def analyze(resume_path: str, jd_path: str = None):
     print("\nAnalyzing... please wait\n")

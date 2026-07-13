@@ -39,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'authentication',
     'jobs',
+    'chatbot',
+    'ats_analyser',
 ]
 
 MIDDLEWARE = [

@@ -132,7 +132,7 @@
 
     <script>
         // Base URL of the merged chatbot + email/cover-letter FastAPI service.
-        const API = "http://127.0.0.1:8001/email-cover";
+        const API = "/chatbot-api/email-cover";
 
         const resumeTextEl = document.getElementById("resume-text");
         const resumeFileEl = document.getElementById("resume-file");
@@ -248,7 +248,7 @@
             } catch (err) {
                 showError(
                     "Couldn't reach the service, or it returned an error. " +
-                    "Make sure it's running (uvicorn main:app --port 8001). Details: " + err.message
+                    "Make sure it's running (python manage.py runserver). Details: " + err.message
                 );
             } finally {
                 statusEl.textContent = "";

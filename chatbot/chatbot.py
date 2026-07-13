@@ -1,6 +1,6 @@
-from config import is_job_related, is_small_talk, OFF_TOPIC_REPLY
-from memory import ConversationMemory
-from llm_api import call_llm
+from .config import is_job_related, is_small_talk, OFF_TOPIC_REPLY
+from .memory import ConversationMemory
+from .llm_api import call_llm
 
 
 class JobChatbot:

@@ -67,7 +67,7 @@
     <script>
         // Base URL of the FastAPI chatbot service.
         // Change this if you deploy the chatbot service somewhere other than localhost:8001.
-        const CHATBOT_API = "http://127.0.0.1:8001";
+        const CHATBOT_API = "/chatbot-api";
 
         // Each logged-in user gets their own conversation memory on the FastAPI side.
         const SESSION_ID = "{{ request.user.username|escapejs }}";
@@ -162,7 +162,7 @@
                 addMessage(data.reply, "bot");
             } catch (err) {
                 addMessage(
-                    "Couldn't reach the chatbot service. Make sure it's running (uvicorn main:app --port 8001).",
+                    "Couldn't reach the chatbot service. Make sure it's running (python manage.py runserver).",
                     "error"
                 );
             } finally {

@@ -133,7 +133,7 @@
 
     <script>
         // Base URL of the ATS FastAPI service.
-        const ATS_API = "http://127.0.0.1:8002";
+        const ATS_API = "/ats-api";
 
         const form = document.getElementById("ats-form");
         const statusEl = document.getElementById("status");
@@ -299,7 +299,7 @@
             } catch (err) {
                 showError(
                     "Couldn't reach the ATS service, or it returned an error. " +
-                    "Make sure it's running (uvicorn main:app --port 8002). " +
+                    "Make sure it's running (python manage.py runserver). " +
                     "Details: " + err.message
                 );
             } finally {

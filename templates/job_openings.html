@@ -67,7 +67,7 @@
 
     <script>
         // Base URL of the Jobs FastAPI service.
-        const JOBS_API = "http://127.0.0.1:8003";
+        const JOBS_API = "/jobs-api";
 
         const keywordEl = document.getElementById("keyword");
         const locationEl = document.getElementById("location");
@@ -175,7 +175,7 @@
             } catch (err) {
                 showError(
                     "Couldn't reach the jobs service, or it returned an error. " +
-                    "Make sure it's running (uvicorn main:app --port 8003). " +
+                    "Make sure it's running (python manage.py runserver). " +
                     "Details: " + err.message
                 );
             } finally {
