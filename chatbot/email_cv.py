@@ -16,7 +16,6 @@ from pypdf import PdfReader
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
-load_dotenv(Path(__file__).resolve().parent / ".env")
 
 MODEL = "llama-3.1-8b-instant"
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))

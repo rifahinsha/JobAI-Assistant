@@ -28,7 +28,6 @@ def root(request):
     return JsonResponse({"status": "ok", "service": "Job Assistant Chatbot"})
 
 
-@csrf_exempt
 @require_POST
 def chat(request):
     body = _parse_json_body(request)
@@ -46,7 +45,6 @@ def chat(request):
     return JsonResponse({"reply": reply, "session_id": session_id})
 
 
-@csrf_exempt
 @require_POST
 def reset_chat(request):
     session_id = request.GET.get("session_id", "default")
@@ -66,7 +64,6 @@ def get_history(request):
     })
 
 
-@csrf_exempt
 @require_POST
 def email_analyze(request):
     resume_text = request.POST.get("resume_text")
@@ -93,7 +90,6 @@ def email_analyze(request):
     })
 
 
-@csrf_exempt
 @require_POST
 def email_cover_letter(request):
     body = _parse_json_body(request)
@@ -106,7 +102,6 @@ def email_cover_letter(request):
     return JsonResponse({"cover_letter": text})
 
 
-@csrf_exempt
 @require_POST
 def email_cover_letter_pdf(request):
     body = _parse_json_body(request)

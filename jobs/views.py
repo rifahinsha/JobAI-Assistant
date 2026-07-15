@@ -6,7 +6,6 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from dotenv import load_dotenv
 
-load_dotenv(Path(__file__).resolve().parent / ".env")
 
 ADZUNA_APP_ID = os.getenv("ADZUNA_APP_ID")
 ADZUNA_APP_KEY = os.getenv("ADZUNA_APP_KEY")

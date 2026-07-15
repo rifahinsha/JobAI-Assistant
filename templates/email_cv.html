@@ -82,6 +82,7 @@
             <p>Provide your resume and a job description to get a tailored application email, and optionally a full cover letter.</p>
 
             <form id="analyze-form">
+                {% csrf_token %}
                 <fieldset>
                     <legend>Resume (required)</legend>
                     <div class="input-toggle">
@@ -131,6 +132,15 @@
     </div>
 
     <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            document.cookie.split(';').forEach(cookie => {
+                const [key, value] = cookie.trim().split('=');
+                if (key === name) cookieValue = value;
+            });
+            return cookieValue;
+        }
+
         // Base URL of the merged chatbot + email/cover-letter FastAPI service.
         const API = "/chatbot-api/email-cover";
 
@@ -177,15 +187,12 @@
 
         const resetBtn = document.getElementById("reset-uploads");
         resetBtn.addEventListener("click", () => {
-            // Clear pasted text
             resumeTextEl.value = "";
             jdTextEl.value = "";
 
-            // Clear selected files (the reliable way to reset a file input)
             resumeFileEl.value = "";
             jdFileEl.value = "";
 
-            // Reset the input-mode radios back to "paste text" (the default)
             document.querySelector('input[name="resume-mode"][value="text"]').checked = true;
             document.querySelector('input[name="jd-mode"][value="text"]').checked = true;
             resumeTextEl.style.display = "block";
@@ -193,7 +200,6 @@
             jdTextEl.style.display = "block";
             jdFileEl.style.display = "none";
 
-            // Clear any previous results/errors/status
             clearError();
             resultsEl.style.display = "none";
             document.getElementById("cover-letter-section").style.display = "none";
@@ -230,7 +236,11 @@
             statusEl.textContent = "Analyzing resume and job description...";
 
             try {
-                const res = await fetch(`${API}/analyze`, { method: "POST", body: formData });
+                const res = await fetch(`${API}/analyze`, {
+                    method: "POST",
+                    headers: { "X-CSRFToken": getCookie("csrftoken") },
+                    body: formData
+                });
                 if (!res.ok) {
                     const errText = await res.text();
                     throw new Error(errText || `Server responded with ${res.status}`);
@@ -262,7 +272,10 @@
             try {
                 const res = await fetch(`${API}/cover-letter`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCookie("csrftoken")
+                    },
                     body: JSON.stringify({
                         matched_skills: lastMatchedSkills,
                         job_description: lastJobDescription
@@ -290,7 +303,10 @@
             try {
                 const res = await fetch(`${API}/cover-letter/pdf`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCookie("csrftoken")
+                    },
                     body: JSON.stringify({ cover_letter_text: lastCoverLetterText })
                 });
                 if (!res.ok) {

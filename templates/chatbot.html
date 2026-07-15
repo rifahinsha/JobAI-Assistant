@@ -56,6 +56,7 @@
             <div id="chat-window"></div>
 
             <form id="chat-form">
+                {% csrf_token %}
                 <input type="text" id="chat-input" placeholder="Type your question..." autocomplete="off" required>
                 <button type="submit">Send</button>
                 <button type="button" id="reset-btn">Reset</button>
@@ -65,6 +66,15 @@
     </div>
 
     <script>
+        function getCookie(name) {
+            let cookieValue = null;
+            document.cookie.split(';').forEach(cookie => {
+                const [key, value] = cookie.trim().split('=');
+                if (key === name) cookieValue = value;
+            });
+            return cookieValue;
+        }
+
         // Base URL of the FastAPI chatbot service.
         // Change this if you deploy the chatbot service somewhere other than localhost:8001.
         const CHATBOT_API = "/chatbot-api";
@@ -84,20 +94,9 @@
             return d.innerHTML;
         }
 
-        // Minimal Markdown -> HTML for bot replies: bold + bullet lists.
-        // Groq/Llama replies sometimes put every bullet on its own line, and
-        // sometimes cram everything onto a single line separated by " * ".
-        // We normalize both cases by inserting a newline before every bullet
-        // marker (a "*" that starts a line OR is preceded by whitespace),
-        // then process line by line.
         function renderMarkdown(text) {
             let escaped = escapeHtml(text);
-
-            // Bold: **text**
             escaped = escaped.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-
-            // Normalize bullets: turn " * " (space-star-space) anywhere into
-            // a newline + "* ", so single-line responses get split too.
             escaped = escaped.replace(/(^|\s)\*\s+/g, "\n* ");
 
             const lines = escaped.split("\n");
@@ -132,7 +131,7 @@
             if (cls === "bot") {
                 div.innerHTML = renderMarkdown(text);
             } else {
-                div.textContent = text; // user input: never render as HTML
+                div.textContent = text;
             }
             chatWindow.appendChild(div);
             chatWindow.scrollTop = chatWindow.scrollHeight;
@@ -150,7 +149,10 @@
             try {
                 const res = await fetch(`${CHATBOT_API}/chat`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": getCookie("csrftoken")
+                    },
                     body: JSON.stringify({ message: message, session_id: SESSION_ID })
                 });
 
@@ -174,7 +176,10 @@
             statusEl.textContent = "Resetting...";
             try {
                 await fetch(`${CHATBOT_API}/reset?session_id=${encodeURIComponent(SESSION_ID)}`, {
-                    method: "POST"
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": getCookie("csrftoken")
+                    }
                 });
                 chatWindow.innerHTML = "";
                 addMessage("Conversation cleared. Ask me anything about your job search!", "bot");

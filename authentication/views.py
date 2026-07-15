@@ -152,13 +152,13 @@ def saved_jobs(request):
 @login_required(login_url="login")
 @require_POST
 def unsave_job(request):
-    adzuna_id=(request.POST.get("id")or("").strip)
+    adzuna_id=(request.POST.get("id")or"").strip()
 
     if not adzuna_id:
         return JsonResponse({"error": "Missing job id."}, status=400)
     deleted, _ = SavedJob.objects.filter(user=request.user, adzuna_id=adzuna_id).delete()
     if not deleted:
-        return JsonResponse({"status":"noy_found"},status=404)
+        return JsonResponse({"status":"not_found"},status=404)
     
     return JsonResponse({"status":"removed"})
 
