@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Mock Interview | Job Assistant{% endblock %}
+
+{% block extra_style %}
+<style>
+    .progress-track {
+        height: 8px; border-radius: 999px; background: var(--paper-soft);
+        border: 1px solid var(--border); overflow: hidden; margin: 1.2rem 0 0.5rem;
+    }
+    .progress-fill {
+        height: 100%; background: var(--lime); border-radius: 999px;
+        transition: width 0.25s ease;
+    }
+    .progress-label { font-size: 0.82rem; color: var(--ink-soft); }
+
+    textarea {
+        width: 100%; font-family: inherit; font-size: 0.95rem;
+        padding: 0.75rem 1rem; border: 1.5px solid var(--border); border-radius: 12px;
+        background: var(--paper-soft); color: var(--ink); resize: vertical; min-height: 100px;
+    }
+    textarea:focus { outline: none; border-color: var(--lime-deep); background: #fff; }
+
+    .question-box {
+        background: var(--paper-soft); border-radius: 14px; padding: 1.2rem 1.4rem;
+        margin: 1.2rem 0; font-weight: 600; font-size: 1.02rem;
+    }
+
+    .result-card {
+        border: 1.5px solid var(--border); border-radius: 14px; padding: 1rem 1.3rem;
+        margin: 1.2rem 0; background: #fff;
+    }
+    .score-pill {
+        display: inline-block; font-weight: 700; font-size: 0.85rem;
+        background: rgba(139, 214, 80, 0.16); color: var(--green-deep);
+        padding: 0.3rem 0.8rem; border-radius: 999px; margin-bottom: 0.5rem;
+    }
+    .score-pill.low { background: rgba(217, 83, 79, 0.12); color: var(--err); }
+
+    #status { font-size: 0.85em; color: var(--ink-soft); margin-top: 6px; min-height: 1.2em; }
+    .error-box { background: rgba(217, 83, 79, 0.1); color: var(--err); border-radius: 12px; padding: 0.8rem 1rem; margin-top: 1rem; font-size: 0.9rem; }
+
+    .history-item { padding: 0.9rem 0; border-top: 1px solid var(--border); }
+    .history-item:first-child { border-top: none; }
+    .history-item .q { font-weight: 600; margin-bottom: 0.3rem; }
+    .history-item .a { color: var(--ink-soft); font-size: 0.9rem; margin-bottom: 0.3rem; }
+
+    .hidden { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    {% url 'dashboard' as dashboard_url %}
+    <div class="banner">
+        {% include "partials/nav.html" with nav_href=dashboard_url nav_label="Back" nav_dark=True %}
+        <div class="banner-body">
+            <span>Practice interview</span>
+            <h2>Mock Interview</h2>
+        </div>
+    </div>
+
+    <div class="content-wrap">
+        <div class="card">
+
+            <!-- STEP 1: setup form -->
+            <div id="setup-step">
+                <p>Tell us about the role and paste the job description — we'll generate tailored interview questions and score each answer as you go.</p>
+
+                <div class="field-group">
+                    <label for="role-input">Role</label>
+                    <input type="text" id="role-input" placeholder="e.g. Backend Developer" required>
+                </div>
+
+                <div class="field-group">
+                    <label for="experience-input">Experience level</label>
+                    <input type="text" id="experience-input" placeholder="e.g. Fresher / 2 years / Senior" required>
+                </div>
+
+                <div class="field-group">
+                    <label for="jd-input">Job description</label>
+                    <textarea id="jd-input" placeholder="Paste the job description here..." required></textarea>
+                </div>
+
+                <div class="actions">
+                    <button type="button" id="start-btn" style="font-family:inherit;font-weight:600;font-size:0.95rem;color:var(--ink);background:var(--lime);border:none;padding:0.8rem 1.9rem;border-radius:999px;cursor:pointer;">Start Interview</button>
+                </div>
+                <div id="setup-status"></div>
+            </div>
+
+            <!-- STEP 2: active interview -->
+            <div id="interview-step" class="hidden">
+                <div class="progress-label"><span id="progress-text"></span></div>
+                <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+
+                <div class="question-box" id="question-text"></div>
+
+                <div class="field-group">
+                    <label for="answer-input">Your answer</label>
+                    <textarea id="answer-input" placeholder="Type your answer..." required></textarea>
+                </div>
+
+                <div class="actions">
+                    <button type="button" id="answer-btn" style="font-family:inherit;font-weight:600;font-size:0.95rem;color:var(--ink);background:var(--lime);border:none;padding:0.8rem 1.9rem;border-radius:999px;cursor:pointer;">Submit Answer</button>
+                </div>
+                <div id="answer-status"></div>
+
+                <div id="result-card" class="result-card hidden">
+                    <div id="score-pill" class="score-pill"></div>
+                    <p id="feedback-text"></p>
+                    <div class="actions">
+                        <button type="button" id="next-btn" style="font-family:inherit;font-weight:600;font-size:0.95rem;color:var(--ink);background:var(--lime);border:none;padding:0.8rem 1.9rem;border-radius:999px;cursor:pointer;">Next Question</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 3: completion summary -->
+            <div id="summary-step" class="hidden">
+                <div class="banner-body" style="padding:0;">
+                    <span>Interview complete</span>
+                    <h2 style="color:var(--ink);font-size:1.4rem;">Nice work!</h2>
+                </div>
+                <p id="summary-average" style="font-weight:600;"></p>
+                <div id="history-list"></div>
+                <div class="actions">
+                    <button type="button" id="restart-btn" style="font-family:inherit;font-weight:600;font-size:0.95rem;color:var(--ink);background:var(--lime);border:none;padding:0.8rem 1.9rem;border-radius:999px;cursor:pointer;">Start a New Interview</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const API = "/interview-api";
+
+        const setupStep = document.getElementById("setup-step");
+        const interviewStep = document.getElementById("interview-step");
+        const summaryStep = document.getElementById("summary-step");
+
+        const roleInput = document.getElementById("role-input");
+        const experienceInput = document.getElementById("experience-input");
+        const jdInput = document.getElementById("jd-input");
+        const startBtn = document.getElementById("start-btn");
+        const setupStatus = document.getElementById("setup-status");
+
+        const progressText = document.getElementById("progress-text");
+        const progressFill = document.getElementById("progress-fill");
+        const questionText = document.getElementById("question-text");
+        const answerInput = document.getElementById("answer-input");
+        const answerBtn = document.getElementById("answer-btn");
+        const answerStatus = document.getElementById("answer-status");
+        const resultCard = document.getElementById("result-card");
+        const scorePill = document.getElementById("score-pill");
+        const feedbackText = document.getElementById("feedback-text");
+        const nextBtn = document.getElementById("next-btn");
+
+        const summaryAverage = document.getElementById("summary-average");
+        const historyList = document.getElementById("history-list");
+        const restartBtn = document.getElementById("restart-btn");
+
+        let total = 0;
+
+        function showError(el, message) {
+            el.innerHTML = `<div class="error-box">${message}</div>`;
+        }
+
+        async function postJSON(path, body) {
+            const res = await fetch(`${API}${path}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body || {}),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(data.detail || `Request failed (${res.status})`);
+            }
+            return data;
+        }
+
+        function setQuestion(index, question) {
+            progressText.textContent = `Question ${index + 1} of ${total}`;
+            progressFill.style.width = `${((index) / total) * 100}%`;
+            questionText.textContent = question;
+            answerInput.value = "";
+            resultCard.classList.add("hidden");
+            answerBtn.disabled = false;
+        }
+
+        startBtn.addEventListener("click", async () => {
+            const role = roleInput.value.trim();
+            const experience = experienceInput.value.trim();
+            const jd = jdInput.value.trim();
+
+            if (!role || !experience || !jd) {
+                showError(setupStatus, "Please fill in role, experience, and job description.");
+                return;
+            }
+
+            setupStatus.textContent = "Generating questions...";
+            startBtn.disabled = true;
+
+            try {
+                const data = await postJSON("/start", { role, experience, jd });
+                total = data.total;
+                setupStatus.textContent = "";
+                setupStep.classList.add("hidden");
+                interviewStep.classList.remove("hidden");
+                setQuestion(data.index, data.question);
+            } catch (err) {
+                showError(setupStatus, err.message);
+            } finally {
+                startBtn.disabled = false;
+            }
+        });
+
+        answerBtn.addEventListener("click", async () => {
+            const answer = answerInput.value.trim();
+            if (!answer) {
+                showError(answerStatus, "Please enter an answer.");
+                return;
+            }
+
+            answerStatus.textContent = "Evaluating...";
+            answerBtn.disabled = true;
+
+            try {
+                const data = await postJSON("/answer", { answer });
+                answerStatus.textContent = "";
+
+                scorePill.textContent = data.score !== null ? `Score: ${data.score}/10` : "Score: N/A";
+                scorePill.className = "score-pill" + (data.score !== null && data.score < 5 ? " low" : "");
+                feedbackText.textContent = data.feedback;
+                resultCard.classList.remove("hidden");
+
+                progressFill.style.width = `${(data.index / total) * 100}%`;
+
+                nextBtn.dataset.done = data.done;
+                nextBtn.dataset.nextQuestion = data.next_question || "";
+                nextBtn.dataset.nextIndex = data.index;
+                nextBtn.textContent = data.done ? "See Summary" : "Next Question";
+
+                if (data.done) {
+                    window._miHistory = data.history;
+                }
+            } catch (err) {
+                showError(answerStatus, err.message);
+            } finally {
+                answerBtn.disabled = false;
+            }
+        });
+
+        nextBtn.addEventListener("click", () => {
+            const done = nextBtn.dataset.done === "true";
+            if (done) {
+                showSummary(window._miHistory || []);
+                return;
+            }
+            setQuestion(Number(nextBtn.dataset.nextIndex), nextBtn.dataset.nextQuestion);
+        });
+
+        function showSummary(history) {
+            interviewStep.classList.add("hidden");
+            summaryStep.classList.remove("hidden");
+
+            const scored = history.filter(h => h.score !== null);
+            const avg = scored.length
+                ? (scored.reduce((sum, h) => sum + h.score, 0) / scored.length).toFixed(1)
+                : "N/A";
+            summaryAverage.textContent = `Average score: ${avg}/10 across ${history.length} questions`;
+
+            historyList.innerHTML = history.map(h => `
+                <div class="history-item">
+                    <div class="q">${escapeHtml(h.question)}</div>
+                    <div class="a">Your answer: ${escapeHtml(h.answer)}</div>
+                    <div class="score-pill${h.score !== null && h.score < 5 ? ' low' : ''}">Score: ${h.score !== null ? h.score + '/10' : 'N/A'}</div>
+                    <p>${escapeHtml(h.feedback)}</p>
+                </div>
+            `).join("");
+        }
+
+        restartBtn.addEventListener("click", async () => {
+            await postJSON("/reset", {}).catch(() => {});
+            roleInput.value = "";
+            experienceInput.value = "";
+            jdInput.value = "";
+            summaryStep.classList.add("hidden");
+            setupStep.classList.remove("hidden");
+        });
+
+        function escapeHtml(str) {
+            const d = document.createElement("div");
+            d.textContent = str;
+            return d.innerHTML;
+        }
+    </script>
+
+{% endblock %}
