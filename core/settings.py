@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'jobs',
     'chatbot',
     'ats_analyser',
+    'mock_interview',
 ]
 
 MIDDLEWARE = [

@@ -134,6 +134,11 @@ def ats_analyzer(request):
 
 
 @login_required(login_url="login")
+def mock_interview(request):
+    return render(request, 'mock_interview.html')
+
+
+@login_required(login_url="login")
 def job_openings(request):
     return render(request, "job_openings.html")
 
