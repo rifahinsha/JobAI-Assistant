@@ -9,6 +9,7 @@ from authentication.models import Profile, SavedJob
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
+from admin_panel.models import Admin
 
 
 def landing(request):
@@ -64,6 +65,15 @@ def login(request):
         username = request.POST.get('username')
         password = request.POST.get('password')
 
+        try:
+            admin=Admin.objects.get(username=username)
+        except Admin.DoesNotExist:
+            admin=None
+
+        if admin is not None and admin.check_password(password):
+            request.session['admin_id']=admin.id
+            return redirect('admin_panel:admin_index')
+        
         user = authenticate(request, username=username, password=password)
 
         if user is not None:
@@ -77,6 +87,7 @@ def login(request):
 
 
 def logout(request):
+    request.session.pop('admin_id', None)
     auth_logout(request)
     messages.success(request, "Logged Out Successfully.")
     return redirect('landing')

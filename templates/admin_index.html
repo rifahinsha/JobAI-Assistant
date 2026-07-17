@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Admin Dashboard | JobAI{% endblock %}
+
+{% block extra_style %}
+<style>
+    .tools-section { max-width: 1100px; margin: 0 auto; padding: 3rem clamp(1.25rem, 4vw, 2rem) 4.5rem; }
+    .tools-heading { text-align: center; margin-bottom: 2.2rem; }
+    .tools-heading span {
+        display: inline-block;
+        font-size: 0.78rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--lime-deep);
+        margin-bottom: 0.5rem;
+    }
+    .tools-heading h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 700; margin: 0; color: var(--ink); }
+
+    .tool-grid {
+        list-style: none;
+        margin: 0; padding: 0;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 1.4rem;
+    }
+    .tool-card {
+        position: relative;
+        display: block;
+        background: var(--paper-soft);
+        border-radius: 18px;
+        padding: 1.7rem 1.5rem 1.9rem;
+        text-decoration: none;
+        color: inherit;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+    .tool-card:hover, .tool-card:focus-visible {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 32px -18px rgba(22, 60, 44, 0.4);
+        background: #fff;
+    }
+    .tool-card:focus-visible { outline: 2px solid var(--green-mid); outline-offset: 2px; }
+    .tool-icon {
+        width: 46px; height: 46px;
+        border-radius: 12px;
+        background: var(--green-deep);
+        color: var(--lime);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem;
+        margin-bottom: 1.1rem;
+    }
+    .tool-card h3 { font-size: 1.08rem; font-weight: 600; margin: 0 0 0.4rem; }
+    .tool-card p { font-size: 0.88rem; color: var(--ink-soft); margin: 0; line-height: 1.45; }
+    .tool-arrow {
+        position: absolute; bottom: 1.6rem; right: 1.5rem;
+        width: 30px; height: 30px; border-radius: 50%;
+        background: var(--lime);
+        color: var(--ink);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 0.9rem;
+        transition: transform 0.18s ease;
+    }
+    .tool-card:hover .tool-arrow, .tool-card:focus-visible .tool-arrow { transform: translate(2px, -2px); }
+
+    .tool-card.is-disabled { cursor: default; opacity: 0.7; }
+    .tool-card.is-disabled .tool-icon { background: #D9DFDA; color: var(--ink-soft); }
+    .tool-card.is-disabled .tool-arrow { background: #D9DFDA; color: var(--ink-soft); }
+    .soon-tag {
+        position: absolute; top: 1.4rem; right: 1.4rem;
+        font-size: 0.62rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;
+        background: #E7ECE8; color: var(--ink-soft);
+        padding: 0.25rem 0.6rem; border-radius: 999px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    {% url 'logout' as logout_url %}
+    <div class="banner">
+        {% include "partials/nav.html" with nav_href=logout_url nav_label="Log Out" nav_dark=True %}
+        <div class="banner-body">
+            <span>● Admin Panel</span>
+            <h2>Admin Dashboard</h2>
+        </div>
+    </div>
+
+    {% if messages %}
+    <ul class="notices">
+        {% for message in messages %}
+            <li data-tag="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="tools-section">
+        <div class="tools-heading">
+            <span>Admin toolkit</span>
+            <h2>Manage the platform</h2>
+        </div>
+        <ul class="tool-grid">
+            <li>
+                <a class="tool-card" href="{% url 'admin_panel:job_list' %}">
+                    <span class="tool-icon" aria-hidden="true">🗂️</span>
+                    <h3>Job Postings</h3>
+                    <p>Post, edit, and remove job listings shown to users.</p>
+                    <span class="tool-arrow" aria-hidden="true">→</span>
+                </a>
+            </li>
+            <li>
+                <a class="tool-card is-disabled" aria-disabled="true">
+                    <span class="soon-tag">Soon</span>
+                    <span class="tool-icon" aria-hidden="true">🛡️</span>
+                    <h3>Scam Detection</h3>
+                    <p>Review flagged listings for suspicious content.</p>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+{% endblock %}
