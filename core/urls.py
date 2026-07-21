@@ -11,6 +11,7 @@ urlpatterns = [
     path('chatbot-api/', include('chatbot.urls')),
     path('ats-api/', include('ats_analyser.urls')),
     path('interview-api/', include('mock_interview.urls')),
+    path('roadmap-api/', include('career_roadmap.urls')),
 ]
 
 if settings.DEBUG:

@@ -17,6 +17,7 @@ urlpatterns = [
     path('chatbot/', views.chatbot, name="chatbot"),
     path('ats_analyzer/', views.ats_analyzer, name="ats_analyzer"),
     path('mock_interview/', views.mock_interview, name="mock_interview"),
+    path('career_roadmap', views.career_roadmap, name="career_roadmap"),
     path('job_openings/', views.job_openings, name='job_openings'),
     path('email_cv/',views.email_cv,name="email_cv")
 ]
