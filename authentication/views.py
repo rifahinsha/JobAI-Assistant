@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from admin_panel.models import Admin
+from jobs.models import Job
 
 
 def landing(request):
@@ -151,7 +152,8 @@ def mock_interview(request):
 
 @login_required(login_url="login")
 def job_openings(request):
-    return render(request, "job_openings.html")
+    posted_jobs = Job.objects.all().order_by('-created_at')
+    return render(request, "job_openings.html", {"posted_jobs": posted_jobs})
 
 
 @login_required(login_url="login")
@@ -215,3 +217,8 @@ def save_job(request):
         return JsonResponse({"status": "already_saved"})
 
     return JsonResponse({"status":"saved"})
+
+
+@login_required(login_url="login")
+def posted_jobs(request):
+    return redirect('job_openings')

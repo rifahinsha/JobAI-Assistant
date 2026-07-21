@@ -13,6 +13,7 @@ urlpatterns = [
     path('save_job/', views.save_job, name="save_job"),
     path('saved_jobs/', views.saved_jobs, name="saved_jobs"),
     path('unsave_job/', views.unsave_job, name="unsave_job"),
+    path('posted_jobs', views.posted_jobs, name="posted_jobs"),
     path('chatbot/', views.chatbot, name="chatbot"),
     path('ats_analyzer/', views.ats_analyzer, name="ats_analyzer"),
     path('mock_interview/', views.mock_interview, name="mock_interview"),

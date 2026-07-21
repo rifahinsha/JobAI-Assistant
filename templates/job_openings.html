@@ -37,6 +37,9 @@
     .save-btn:hover { background: var(--paper-soft); }
     .save-btn.is-saved { background: var(--green-deep, #2e7d32) !important; color: #fff; cursor: default; }
     .save-btn:disabled { opacity: 0.7; cursor: default; }
+
+    .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+    .dash-header h2 { margin: 0; font-size: 1.1rem; }
 </style>
 {% endblock %}
 
@@ -52,7 +55,31 @@
     </div>
 
     <div class="content-wrap content-wrap--wide">
+
+        {% if posted_jobs %}
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="dash-header">
+                <h2>{{ posted_jobs|length }} job{{ posted_jobs|length|pluralize }} posted by our team</h2>
+            </div>
+            {% for job in posted_jobs %}
+            <div class="job-card">
+                <h3>{{ job.title }}</h3>
+                <div class="job-meta">{{ job.company }} — {{ job.location }}</div>
+                <div class="job-desc">{{ job.description|truncatewords:30 }}</div>
+                <div class="job-actions">
+                    {% if job.url %}
+                        <a href="{{ job.url }}" target="_blank" rel="noopener">Apply</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         <div class="card">
+            <div class="dash-header">
+                <h2>Search more openings</h2>
+            </div>
             <div class="search-bar">
                 <input type="text" id="keyword" placeholder="Job title (e.g. Python developer)">
                 <input type="text" id="location" placeholder="Location (e.g. Bengaluru)">
