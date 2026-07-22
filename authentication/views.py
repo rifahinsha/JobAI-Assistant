@@ -151,6 +151,11 @@ def mock_interview(request):
 
 
 @login_required(login_url="login")
+def career_roadmap(request):
+    return render(request, 'career_roadmap.html')
+
+
+@login_required(login_url="login")
 def job_openings(request):
     posted_jobs = Job.objects.all().order_by('-created_at')
     saved_admin_ids=set(

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Career Roadmap | JobAI{% endblock %}
+
+{% block content %}
+
+    <h2>Career Roadmap Agent</h2>
+    <p><a href="{% url 'dashboard' %}">Back to Dashboard</a></p>
+
+    <form id="roadmap-form">
+        <p>
+            <label for="role-input">Target Role:</label><br>
+            <input type="text" id="role-input" placeholder="e.g. AI ML Engineer" required>
+        </p>
+
+        <p>
+            <label for="skills-input">Current Skills (comma separated, optional):</label><br>
+            <input type="text" id="skills-input" placeholder="e.g. Python, SQL, Statistics">
+        </p>
+
+        <button type="submit">Generate Roadmap</button>
+        <button type="button" id="download-btn" style="display:none;">Download PDF</button>
+    </form>
+
+    <p id="status"></p>
+    <p id="error-box" style="color:red; display:none;"></p>
+
+    <div id="results" style="display:none;">
+        <h3>Learning Path: <span id="learning-path"></span></h3>
+
+        <h4>Required Skills</h4>
+        <p id="required-skills"></p>
+
+        <h4>Skills to Learn</h4>
+        <p id="missing-skills"></p>
+
+        <h4>Roadmap</h4>
+        <pre id="roadmap-text"></pre>
+
+        <h4>Learning Resources</h4>
+        <pre id="resources-text"></pre>
+
+        <h4>Project Recommendations</h4>
+        <pre id="projects-text"></pre>
+
+        <h4>Validation</h4>
+        <pre id="validation-text"></pre>
+    </div>
+
+    <script>
+        const ROADMAP_API = "/roadmap-api";
+
+        const form = document.getElementById("roadmap-form");
+        const statusEl = document.getElementById("status");
+        const errorBox = document.getElementById("error-box");
+        const resultsEl = document.getElementById("results");
+        const downloadBtn = document.getElementById("download-btn");
+
+        function showError(msg) {
+            errorBox.textContent = msg;
+            errorBox.style.display = "block";
+        }
+
+        function clearError() {
+            errorBox.style.display = "none";
+            errorBox.textContent = "";
+        }
+
+        function renderResults(data) {
+            resultsEl.style.display = "block";
+            downloadBtn.style.display = "inline-block";
+
+            document.getElementById("learning-path").textContent = data.learning_path;
+            document.getElementById("required-skills").textContent = (data.required_skills || []).join(", ");
+            document.getElementById("missing-skills").textContent = (data.missing_skills || []).join(", ");
+            document.getElementById("roadmap-text").textContent = data.roadmap;
+            document.getElementById("resources-text").textContent = data.resources;
+            document.getElementById("projects-text").textContent = data.projects;
+            document.getElementById("validation-text").textContent = data.validation;
+        }
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            clearError();
+            resultsEl.style.display = "none";
+            downloadBtn.style.display = "none";
+
+            const role = document.getElementById("role-input").value.trim();
+            const skills = document.getElementById("skills-input").value.trim();
+
+            if (!role) {
+                showError("Please enter a target role.");
+                return;
+            }
+
+            statusEl.textContent = "Running the agent pipeline... this can take 15-30 seconds.";
+
+            try {
+                const res = await fetch(`${ROADMAP_API}/generate`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ role: role, current_skills: skills })
+                });
+
+                if (!res.ok) {
+                    const errPayload = await res.json().catch(() => ({}));
+                    throw new Error(errPayload.detail || `Server responded with ${res.status}`);
+                }
+
+                const payload = await res.json();
+                renderResults(payload.data);
+            } catch (err) {
+                showError("Couldn't generate the roadmap. Details: " + err.message);
+            } finally {
+                statusEl.textContent = "";
+            }
+        });
+
+        downloadBtn.addEventListener("click", () => {
+            window.location.href = `${ROADMAP_API}/download`;
+        });
+    </script>
+
+{% endblock %}

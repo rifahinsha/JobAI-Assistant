@@ -45,7 +45,11 @@ INSTALLED_APPS = [
     'ats_analyser',
     'mock_interview',
     'admin_panel',
+<<<<<<< HEAD
     'resume_builder',
+=======
+    'career_roadmap',
+>>>>>>> cecf14376a67ce66d90c4661efa1c4c2052ee7f0
 ]
 
 MIDDLEWARE = [
