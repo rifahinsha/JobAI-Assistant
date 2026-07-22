@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'ats_analyser',
     'mock_interview',
     'admin_panel',
+    'resume_builder',
 ]
 
 MIDDLEWARE = [

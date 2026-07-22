@@ -70,6 +70,19 @@
                     {% if job.url %}
                         <a href="{{ job.url }}" target="_blank" rel="noopener">Apply</a>
                     {% endif %}
+                    {% with admin_id="admin-"|add:job.pk|stringformat:"s" %}
+                    <button
+                        type="button"
+                        class="save-btn admin-save-btn{% if admin_id in saved_admin_ids %} is-saved{% endif %}"
+                        data-id="{{ admin_id }}"
+                        data-title="{{ job.title }}"
+                        data-company="{{ job.company }}"
+                        data-location="{{ job.location }}"
+                        data-description="{{ job.description }}"
+                        data-url="{{ job.url }}"
+                        {% if admin_id in saved_admin_ids %}disabled{% endif %}
+                    >{% if admin_id in saved_admin_ids %}Saved ✓{% else %}Save{% endif %}</button>
+                    {% endwith %}
                 </div>
             </div>
             {% endfor %}
@@ -213,6 +226,22 @@
         searchBtn.addEventListener("click", fetchJobs);
         keywordEl.addEventListener("keydown", e => { if (e.key === "Enter") fetchJobs(); });
         locationEl.addEventListener("keydown", e => { if (e.key === "Enter") fetchJobs(); });
+
+        // Wire up save buttons on admin-posted jobs (server-rendered, not from the API).
+        document.querySelectorAll(".admin-save-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const el = e.currentTarget;
+                const job = {
+                    id: el.dataset.id,
+                    title: el.dataset.title,
+                    company: el.dataset.company,
+                    location: el.dataset.location,
+                    description: el.dataset.description,
+                    url: el.dataset.url,
+                };
+                saveJob(job, el);
+            });
+        });
 
         // Load a default search on page load so it's not empty.
         fetchJobs();

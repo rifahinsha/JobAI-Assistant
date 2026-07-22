@@ -95,5 +95,4 @@ SMALL_TALK_KEYWORDS = [
 
 def is_small_talk(text: str) -> bool:
     lower = text.lower().strip()
-    return any(lower == word or lower.startswith(word)
-               for word in SMALL_TALK_KEYWORDS)
+    return lower in SMALL_TALK_KEYWORDS

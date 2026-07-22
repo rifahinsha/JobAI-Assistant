@@ -10,7 +10,6 @@ import pdfplumber  # extract text from PDF
 from dotenv import load_dotenv
 from groq import Groq  # LLM API client
 
-load_dotenv(Path(__file__).resolve().parent / ".env")
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 GROQ_MODEL = "llama-3.3-70b-versatile"

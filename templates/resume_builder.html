@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Resume Builder | JobAI{% endblock %}
+
+{% block extra_style %}
+<style>
+    @media print {
+        .form-panel, .action-buttons, .notices, .banner { display: none !important; }
+        .resume-panel { border: none !important; box-shadow: none !important; padding: 0 !important; }
+    }
+
+    .builder-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.6rem;
+        align-items: start;
+    }
+    @media (max-width: 860px) { .builder-grid { grid-template-columns: 1fr; } }
+
+    .panel-heading {
+        font-size: 1.1rem; font-weight: 700; color: var(--ink);
+        margin: 0 0 0.3rem 0;
+    }
+    .panel-subtext { color: var(--ink-soft); font-size: 0.9rem; margin: 0 0 1.4rem 0; }
+
+    select {
+        width: 100%; font-family: inherit; font-size: 0.92rem;
+        padding: 0.7rem 0.9rem; border: 1.5px solid var(--border); border-radius: 10px;
+        background: #fff; color: var(--ink); appearance: none;
+        background-image: linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%), linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%);
+        background-position: calc(100% - 20px) center, calc(100% - 15px) center;
+        background-size: 5px 5px, 5px 5px;
+        background-repeat: no-repeat;
+    }
+    select:focus { outline: none; border-color: var(--lime-deep); }
+
+    textarea {
+        width: 100%; box-sizing: border-box; font-family: inherit; font-size: 0.92rem;
+        min-height: 80px; resize: vertical; line-height: 1.5;
+        padding: 0.7rem 0.9rem; border: 1.5px solid var(--border); border-radius: 10px;
+        background: var(--paper-soft); color: var(--ink);
+        transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    textarea:focus { outline: none; border-color: var(--lime-deep); background: #fff; }
+    textarea#experience, textarea#projects { min-height: 130px; }
+
+    .resume-panel {
+        position: sticky; top: 1.5rem;
+        display: flex; flex-direction: column;
+    }
+    .resume-panel-header {
+        display: flex; align-items: baseline; justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+    .resume-status {
+        font-size: 0.78rem; font-weight: 600; color: var(--lime-deep);
+        background: rgba(139, 214, 80, 0.16); padding: 0.25rem 0.7rem; border-radius: 999px;
+    }
+
+    #resumePreview {
+        border: 1px solid var(--border); border-radius: 10px;
+        padding: 2rem 1.8rem; background: #fff; min-height: 300px;
+        max-height: 75vh; overflow-y: auto;
+        box-shadow: 0 10px 30px -20px rgba(22, 60, 44, 0.4);
+        font-family: 'Georgia', 'Times New Roman', serif;
+    }
+    #resumePreview .resume-header {
+        text-align: center; margin-bottom: 15px; border-bottom: 2px solid var(--ink); padding-bottom: 12px;
+    }
+    #resumePreview .resume-name {
+        font-size: 1.6rem; font-weight: 700; letter-spacing: 1.5px; margin-bottom: 6px; color: var(--ink);
+    }
+    #resumePreview .resume-contact { font-size: 0.82rem; color: var(--ink-soft); margin: 5px 0; }
+    #resumePreview .resume-contact a { color: var(--green-deep); text-decoration: none; margin: 0 8px; }
+    #resumePreview .resume-section { margin: 16px 0; }
+    #resumePreview .resume-section-title {
+        font-size: 0.95rem; font-weight: 700; color: var(--green-deep); letter-spacing: 0.5px;
+        text-transform: uppercase; border-bottom: 1px solid var(--border); margin: 14px 0 8px 0; padding-bottom: 3px;
+    }
+    #resumePreview .resume-item { margin: 11px 0; }
+    #resumePreview .resume-item-header { display: flex; justify-content: space-between; font-weight: 700; }
+    #resumePreview .resume-item-subtitle { font-style: italic; color: var(--ink-soft); margin-bottom: 5px; }
+    #resumePreview .resume-item-location { font-style: italic; text-align: right; font-size: 0.8rem; color: var(--ink-soft); }
+    #resumePreview .resume-list { margin-left: 18px; margin-top: 5px; list-style: none; }
+    #resumePreview .resume-list li { margin: 4px 0; text-indent: -16px; padding-left: 16px; font-size: 0.88rem; line-height: 1.45; }
+    #resumePreview .resume-list li:before { content: "\2022 "; color: var(--green-deep); }
+    #resumePreview .coursework-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-left: 18px; list-style: none; }
+    #resumePreview .skill-item { margin: 5px 0; font-size: 0.88rem; }
+    #resumePreview .skill-label { font-weight: 700; }
+    #resumePreview .empty-state { text-align: center; color: var(--ink-soft); margin-top: 90px; font-family: 'Poppins', sans-serif; font-size: 0.92rem; }
+
+    .action-buttons { display: flex; gap: 0.7rem; margin-top: 1rem; }
+    .btn-download, .btn-secondary {
+        flex: 1; text-align: center; text-decoration: none;
+        padding: 0.7rem 1.2rem; border-radius: 999px; font-weight: 600; font-size: 0.88rem;
+        transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+    }
+    .btn-download { background: var(--lime); color: var(--ink); }
+    .btn-download:hover { background: var(--lime-deep); transform: translateY(-1px); }
+    .btn-secondary { background: transparent; color: var(--ink-soft); border: 1.5px solid var(--border); }
+    .btn-secondary:hover { border-color: var(--green-deep); color: var(--green-deep); }
+    .print-hint { text-align: center; color: var(--ink-soft); font-size: 0.8rem; margin-top: 0.7rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% url 'dashboard' as dashboard_url %}
+<div class="banner">
+    {% include "partials/nav.html" with nav_href=dashboard_url nav_label="Back" nav_dark=True %}
+    <div class="banner-body">
+        <span>Build in minutes</span>
+        <h2>Resume Builder</h2>
+    </div>
+</div>
+
+{% if messages %}
+<ul class="notices">
+    {% for message in messages %}
+        <li data-tag="{{ message.tags }}">{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<div class="content-wrap content-wrap--wide">
+    <div class="builder-grid">
+        <div class="card form-panel">
+            <h3 class="panel-heading">Your Details</h3>
+            <p class="panel-subtext">Fill in your details and let AI draft an ATS-friendly resume for you.</p>
+
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="field-group">
+                    <label for="resumeType">Resume Type</label>
+                    <select id="resumeType" name="resumeType">
+                        <option value="software" {% if form_data.resumeType == "software" %}selected{% endif %}>Software Engineer</option>
+                        <option value="data" {% if form_data.resumeType == "data" %}selected{% endif %}>Data Scientist</option>
+                        <option value="product" {% if form_data.resumeType == "product" %}selected{% endif %}>Product Manager</option>
+                        <option value="marketing" {% if form_data.resumeType == "marketing" %}selected{% endif %}>Marketing Manager</option>
+                        <option value="designer" {% if form_data.resumeType == "designer" %}selected{% endif %}>UI/UX Designer</option>
+                    </select>
+                </div>
+
+                <div class="field-group">
+                    <label for="personalInfo">Personal Information</label>
+                    <textarea id="personalInfo" name="personalInfo" placeholder="Name, email, phone, LinkedIn, GitHub, location, etc.">{{ form_data.personalInfo|default:"" }}</textarea>
+                </div>
+
+                <div class="field-group">
+                    <label for="education">Education Background</label>
+                    <textarea id="education" name="education" placeholder="University name, degree, major, graduation date, GPA (optional), relevant coursework">{{ form_data.education|default:"" }}</textarea>
+                </div>
+
+                <div class="field-group">
+                    <label for="experience">Work Experience</label>
+                    <textarea id="experience" name="experience" placeholder="Company names, job titles, dates, responsibilities, and achievements. Include internships and full-time roles.">{{ form_data.experience|default:"" }}</textarea>
+                </div>
+
+                <div class="field-group">
+                    <label for="projects">Projects</label>
+                    <textarea id="projects" name="projects" placeholder="Project names, technologies used, descriptions, and key accomplishments">{{ form_data.projects|default:"" }}</textarea>
+                </div>
+
+                <div class="field-group">
+                    <label for="skills">Technical Skills</label>
+                    <textarea id="skills" name="skills" placeholder="Programming languages, frameworks, tools, technologies">{{ form_data.skills|default:"" }}</textarea>
+                </div>
+
+                <div class="field-group">
+                    <label for="extracurricular">Leadership / Extracurricular (Optional)</label>
+                    <textarea id="extracurricular" name="extracurricular" placeholder="Leadership roles, clubs, volunteer work, achievements">{{ form_data.extracurricular|default:"" }}</textarea>
+                </div>
+
+                <button type="submit">{% if generated_html %}Regenerate Resume{% else %}Generate Resume{% endif %}</button>
+            </form>
+        </div>
+
+        <div class="card resume-panel">
+            <div class="resume-panel-header">
+                <h3 class="panel-heading" style="margin: 0;">Preview</h3>
+                {% if generated_html %}<span class="resume-status">Ready</span>{% endif %}
+            </div>
+
+            <div id="resumePreview">
+                {% if generated_html %}
+                    {{ generated_html|safe }}
+                {% else %}
+                    <p class="empty-state">
+                        Fill out the form and click "Generate Resume" to see your
+                        professional resume here.
+                    </p>
+                {% endif %}
+            </div>
+
+            {% if generated_html %}
+                <div class="action-buttons">
+                    <a class="btn-download" href="{% url 'resume_builder:download_resume_pdf' %}" style="flex: none; width: 100%;">Download PDF</a>
+                </div>
+                <div class="action-buttons">
+                    <a class="btn-secondary" href="{% url 'resume_builder:resume_builder' %}" style="flex: none; width: 100%;">Reset</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
