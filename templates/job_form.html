@@ -37,7 +37,7 @@
 
     {% url 'admin_panel:job_list' as job_list_url %}
     <div class="banner">
-        {% include "partials/nav.html" with nav_href=job_list_url nav_label="Back to Dashboard" nav_dark=True %}
+        {% include "partials/nav.html" with nav_href=job_list_url nav_label="Job Posting" nav_dark=True %}
         <div class="banner-body">
             <span>Admin Panel</span>
             <h2>{{ action }} Job</h2>

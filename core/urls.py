@@ -11,11 +11,8 @@ urlpatterns = [
     path('chatbot-api/', include('chatbot.urls')),
     path('ats-api/', include('ats_analyser.urls')),
     path('interview-api/', include('mock_interview.urls')),
-<<<<<<< HEAD
     path('resume-builder/', include('resume_builder.urls')),
-=======
     path('roadmap-api/', include('career_roadmap.urls')),
->>>>>>> cecf14376a67ce66d90c4661efa1c4c2052ee7f0
 ]
 
 if settings.DEBUG:

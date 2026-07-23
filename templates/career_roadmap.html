@@ -1,50 +1,109 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block title %}Career Roadmap | JobAI{% endblock %}
 
+{% block extra_style %}
+<style>
+    fieldset { margin-bottom: 16px; border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--paper-soft); }
+    legend { font-weight: 600; font-size: 0.9rem; padding: 0 6px; color: var(--ink); }
+    label { font-size: 0.9rem; color: var(--ink); font-weight: 600; display: block; margin-bottom: 6px; }
+    input[type="text"] {
+        width: 100%; box-sizing: border-box;
+        font-family: inherit; font-size: 0.92rem;
+        border: 1.5px solid var(--border); border-radius: 10px;
+        padding: 0.7rem 0.9rem; background: #fff; color: var(--ink);
+    }
+    input[type="text"]:focus { outline: none; border-color: var(--lime-deep); }
+
+    #roadmap-form button[type="submit"] { padding: 10px 20px; font-size: 0.95rem; margin-top: 8px; }
+    #download-btn {
+        padding: 10px 20px; font-size: 0.9rem; margin-top: 8px; margin-left: 10px;
+        background: transparent; color: var(--ink-soft);
+        border: 1.5px solid var(--border); border-radius: 999px; cursor: pointer;
+        font-family: inherit; font-weight: 600;
+        transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    #download-btn:hover { border-color: var(--green-deep); color: var(--green-deep); }
+
+    #status { margin-top: 10px; font-size: 0.9em; color: var(--ink-soft); }
+    #error-box { margin-top: 10px; padding: 10px 14px; background: rgba(217, 83, 79, 0.1); color: var(--err); border-radius: 10px; display: none; }
+
+    #results { margin-top: 24px; display: none; }
+    #results h3, #results h4 { color: var(--ink); }
+    #results h4 { margin-top: 20px; margin-bottom: 6px; }
+
+    .skill-tag { display: inline-block; padding: 3px 10px; margin: 2px; border-radius: 999px; font-size: 0.85em; font-weight: 500; }
+    .skill-required { background: rgba(139, 214, 80, 0.18); color: var(--green-deep); }
+    .skill-missing { background: rgba(217, 83, 79, 0.12); color: var(--err); }
+
+    .roadmap-block {
+        white-space: pre-wrap; word-wrap: break-word;
+        font-family: inherit; font-size: 0.92rem; color: var(--ink);
+        border: 1.5px solid var(--border); border-radius: 10px;
+        padding: 12px 14px; background: var(--paper-soft);
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 
-    <h2>Career Roadmap Agent</h2>
-    <p><a href="{% url 'dashboard' %}">Back to Dashboard</a></p>
+    {% url 'dashboard' as dashboard_url %}
+    <div class="banner">
+        {% include "partials/nav.html" with nav_href=dashboard_url nav_label="Back" nav_dark=True %}
+        <div class="banner-body">
+            <span>Plan your path</span>
+            <h2>Career Roadmap Agent</h2>
+        </div>
+    </div>
 
-    <form id="roadmap-form">
-        <p>
-            <label for="role-input">Target Role:</label><br>
-            <input type="text" id="role-input" placeholder="e.g. AI ML Engineer" required>
-        </p>
+    <div class="content-wrap content-wrap--wide">
+        <div class="card">
+            <p>Tell the agent your target role (and current skills, if you have any) to get a personalized learning roadmap.</p>
 
-        <p>
-            <label for="skills-input">Current Skills (comma separated, optional):</label><br>
-            <input type="text" id="skills-input" placeholder="e.g. Python, SQL, Statistics">
-        </p>
+            <form id="roadmap-form">
+                <fieldset>
+                    <legend>Target Role</legend>
+                    <label for="role-input">Role</label>
+                    <input type="text" id="role-input" placeholder="e.g. AI ML Engineer" required>
+                </fieldset>
 
-        <button type="submit">Generate Roadmap</button>
-        <button type="button" id="download-btn" style="display:none;">Download PDF</button>
-    </form>
+                <fieldset>
+                    <legend>Current Skills (optional)</legend>
+                    <label for="skills-input">Comma separated</label>
+                    <input type="text" id="skills-input" placeholder="e.g. Python, SQL, Statistics">
+                </fieldset>
 
-    <p id="status"></p>
-    <p id="error-box" style="color:red; display:none;"></p>
+                <button type="submit">Generate Roadmap</button>
+                <button type="button" id="download-btn" style="display:none;">Download PDF</button>
+            </form>
 
-    <div id="results" style="display:none;">
-        <h3>Learning Path: <span id="learning-path"></span></h3>
+            <div id="status"></div>
+            <div id="error-box"></div>
 
-        <h4>Required Skills</h4>
-        <p id="required-skills"></p>
+            <div id="results">
+                <h3>Learning Path: <span id="learning-path"></span></h3>
 
-        <h4>Skills to Learn</h4>
-        <p id="missing-skills"></p>
+                <h4>Required Skills</h4>
+                <div id="required-skills"></div>
 
-        <h4>Roadmap</h4>
-        <pre id="roadmap-text"></pre>
+                <h4>Skills to Learn</h4>
+                <div id="missing-skills"></div>
 
-        <h4>Learning Resources</h4>
-        <pre id="resources-text"></pre>
+                <h4>Roadmap</h4>
+                <pre class="roadmap-block" id="roadmap-text"></pre>
 
-        <h4>Project Recommendations</h4>
-        <pre id="projects-text"></pre>
+                <h4>Learning Resources</h4>
+                <pre class="roadmap-block" id="resources-text"></pre>
 
-        <h4>Validation</h4>
-        <pre id="validation-text"></pre>
+                <h4>Project Recommendations</h4>
+                <pre class="roadmap-block" id="projects-text"></pre>
+
+                <h4>Validation</h4>
+                <pre class="roadmap-block" id="validation-text"></pre>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -66,13 +125,20 @@
             errorBox.textContent = "";
         }
 
+        function tagList(elId, items, cls) {
+            const el = document.getElementById(elId);
+            el.innerHTML = items && items.length
+                ? items.map(s => `<span class="skill-tag ${cls}">${s}</span>`).join("")
+                : "None";
+        }
+
         function renderResults(data) {
             resultsEl.style.display = "block";
             downloadBtn.style.display = "inline-block";
 
             document.getElementById("learning-path").textContent = data.learning_path;
-            document.getElementById("required-skills").textContent = (data.required_skills || []).join(", ");
-            document.getElementById("missing-skills").textContent = (data.missing_skills || []).join(", ");
+            tagList("required-skills", data.required_skills, "skill-required");
+            tagList("missing-skills", data.missing_skills, "skill-missing");
             document.getElementById("roadmap-text").textContent = data.roadmap;
             document.getElementById("resources-text").textContent = data.resources;
             document.getElementById("projects-text").textContent = data.projects;

@@ -6,10 +6,7 @@ pdfplumber>=0.11
 python-docx>=1.1
 pypdf>=4.2
 reportlab>=4.1
-<<<<<<< HEAD
 beautifulsoup4>=4.12
-=======
 langgraph>=0.2
 tavily-python>=0.5
 fpdf2>=2.7
->>>>>>> cecf14376a67ce66d90c4661efa1c4c2052ee7f0

@@ -31,9 +31,9 @@
 
 {% block content %}
 
-    {% url 'logout' as logout_url %}
+    {% url 'admin_panel:admin_index' as admin_index_url %}
     <div class="banner">
-        {% include "partials/nav.html" with nav_href=logout_url nav_label="Log Out" nav_dark=True %}
+        {% include "partials/nav.html" with nav_href=admin_index_url nav_label="Dashboard" nav_dark=True %}
         <div class="banner-body">
             <span>Admin Panel</span>
             <h2>Job Postings</h2>
