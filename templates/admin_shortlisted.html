@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Shortlisted Candidates | JobAI Admin{% endblock %}
+
+{% block extra_style %}
+<style>
+    .applicant-card {
+        border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px;
+        background: var(--paper-soft); display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;
+    }
+    .applicant-card .name { font-weight: 600; font-size: 1.02rem; }
+    .applicant-card .job-tag { font-size: 0.8em; font-weight: 600; color: var(--green-deep); }
+    .applicant-card .meta { font-size: 0.85em; color: var(--ink-soft); margin-top: 2px; }
+    .cv-link {
+        font-size: 0.85em; font-weight: 600; text-decoration: none; color: var(--ink);
+        padding: 0.45rem 0.8rem; border: 1.5px solid var(--border); border-radius: 999px;
+        white-space: nowrap;
+    }
+    .cv-link:hover { background: #fff; }
+    .no-cv { font-size: 0.82em; color: var(--ink-soft); font-style: italic; white-space: nowrap; }
+    .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+    .dash-header h2 { margin: 0; font-size: 1.1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    {% url 'admin_panel:admin_index' as admin_index_url %}
+    <div class="banner">
+        {% include "partials/nav.html" with nav_href=admin_index_url nav_label="Dashboard" nav_dark=True %}
+        <div class="banner-body">
+            <span>Admin Panel</span>
+            <h2>Shortlisted Candidates</h2>
+        </div>
+    </div>
+
+    <div class="content-wrap content-wrap--wide">
+        <div class="card">
+            <div class="dash-header">
+                <h2>{{ applications|length }} shortlisted candidate{{ applications|length|pluralize }}</h2>
+            </div>
+
+            {% if applications %}
+                {% for app in applications %}
+                <div class="applicant-card">
+                    <div>
+                        <div class="job-tag">★ {{ app.job.title }}</div>
+                        <div class="name">{{ app.applicant.get_full_name|default:app.applicant.username }}</div>
+                        <div class="meta">{{ app.applicant.email }}{% if app.applicant.profile.phone_number %} · {{ app.applicant.profile.phone_number }}{% endif %} · Shortlisted {{ app.updated_at|date:"M d, Y" }}</div>
+                    </div>
+                    {% if app.cv %}
+                    <a class="cv-link" href="{{ app.cv.url }}" target="_blank" rel="noopener">📄 View CV</a>
+                    {% else %}
+                    <span class="no-cv">No CV attached</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <span class="empty-icon" aria-hidden="true">⭐</span>
+                    <p>No candidates have been shortlisted yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+{% endblock %}

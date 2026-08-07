@@ -86,9 +86,41 @@
     #resumePreview .resume-list li { margin: 4px 0; text-indent: -16px; padding-left: 16px; font-size: 0.88rem; line-height: 1.45; }
     #resumePreview .resume-list li:before { content: "\2022 "; color: var(--green-deep); }
     #resumePreview .coursework-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-left: 18px; list-style: none; }
+
     #resumePreview .skill-item { margin: 5px 0; font-size: 0.88rem; }
     #resumePreview .skill-label { font-weight: 700; }
     #resumePreview .empty-state { text-align: center; color: var(--ink-soft); margin-top: 90px; font-family: 'Poppins', sans-serif; font-size: 0.92rem; }
+
+    /* Template variants -- keep these visually in sync with resume_builder/pdf_export.py TEMPLATES */
+    #resumePreview.tpl-modern { font-family: 'Poppins', Helvetica, sans-serif; }
+    #resumePreview.tpl-modern .resume-header { border-bottom: 3px solid #1F6FEB; text-align: left; }
+    #resumePreview.tpl-modern .resume-name { text-transform: uppercase; }
+    #resumePreview.tpl-modern .resume-section-title { color: #1F6FEB; }
+    #resumePreview.tpl-modern .resume-contact a { color: #1F6FEB; }
+    #resumePreview.tpl-modern .resume-list li:before { color: #1F6FEB; }
+
+    #resumePreview.tpl-minimal { font-family: Helvetica, Arial, sans-serif; }
+    #resumePreview.tpl-minimal .resume-header { border-bottom: 1px solid var(--border); text-align: left; }
+    #resumePreview.tpl-minimal .resume-name { text-transform: none; letter-spacing: 0; }
+    #resumePreview.tpl-minimal .resume-section-title {
+        color: var(--ink); text-transform: none; font-weight: 700; border-bottom: 1px solid var(--border);
+    }
+    #resumePreview.tpl-minimal .resume-list li:before { color: var(--ink); }
+
+    #resumePreview[contenteditable="true"] {
+        outline: 2px dashed var(--lime-deep); outline-offset: 4px; cursor: text;
+    }
+    .edit-toggle-row { display: flex; gap: 0.6rem; margin-bottom: 0.9rem; flex-wrap: wrap; align-items: center; }
+    .edit-toggle-row select {
+        font-family: inherit; font-size: 0.85rem; padding: 0.4rem 0.7rem;
+        border: 1.5px solid var(--border); border-radius: 8px; background: #fff; color: var(--ink);
+    }
+    .mode-btn {
+        padding: 0.4rem 0.9rem; border-radius: 999px; border: 1.5px solid var(--border);
+        background: #fff; font-family: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    }
+    .mode-btn.is-active { background: var(--lime); border-color: var(--lime); }
+    .edit-save-hint { font-size: 0.78rem; color: var(--ink-soft); }
 
     .action-buttons { display: flex; gap: 0.7rem; margin-top: 1rem; }
     .btn-download, .btn-secondary {
@@ -144,6 +176,15 @@
                 </div>
 
                 <div class="field-group">
+                    <label for="templateSelect">Resume Template</label>
+                    <select id="templateSelect" name="template">
+                        {% for value, label in templates %}
+                        <option value="{{ value }}" {% if selected_template == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="field-group">
                     <label for="personalInfo">Personal Information</label>
                     <textarea id="personalInfo" name="personalInfo" placeholder="Name, email, phone, LinkedIn, GitHub, location, etc.">{{ form_data.personalInfo|default:"" }}</textarea>
                 </div>
@@ -180,10 +221,23 @@
         <div class="card resume-panel">
             <div class="resume-panel-header">
                 <h3 class="panel-heading" style="margin: 0;">Preview</h3>
-                {% if generated_html %}<span class="resume-status">Ready</span>{% endif %}
+                {% if generated_html %}<span class="resume-status" id="resumeStatus">Ready</span>{% endif %}
             </div>
 
-            <div id="resumePreview">
+            {% if generated_html %}
+            <div class="edit-toggle-row">
+                <button type="button" class="mode-btn is-active" id="previewModeBtn">Preview</button>
+                <button type="button" class="mode-btn" id="editModeBtn">Edit</button>
+                <select id="liveTemplateSelect">
+                    {% for value, label in templates %}
+                    <option value="{{ value }}" {% if selected_template == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <span class="edit-save-hint" id="editHint"></span>
+            </div>
+            {% endif %}
+
+            <div id="resumePreview" class="tpl-{{ selected_template|default:'classic' }}">
                 {% if generated_html %}
                     {{ generated_html|safe }}
                 {% else %}
@@ -205,4 +259,72 @@
         </div>
     </div>
 </div>
+
+{% if generated_html %}
+<script>
+    function getCookie(name) {
+        const match = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+        return match ? match.pop() : '';
+    }
+
+    const preview = document.getElementById('resumePreview');
+    const previewBtn = document.getElementById('previewModeBtn');
+    const editBtn = document.getElementById('editModeBtn');
+    const hint = document.getElementById('editHint');
+    const templateSelect = document.getElementById('liveTemplateSelect');
+    const statusPill = document.getElementById('resumeStatus');
+
+    async function saveEdits() {
+        hint.textContent = 'Saving...';
+        try {
+            const res = await fetch("{% url 'resume_builder:save_edits' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: 'html=' + encodeURIComponent(preview.innerHTML),
+            });
+            if (!res.ok) throw new Error('Save failed');
+            hint.textContent = 'Changes saved — your download will include them.';
+        } catch (err) {
+            hint.textContent = "Couldn't save your edits. Please try again.";
+        }
+    }
+
+    editBtn.addEventListener('click', () => {
+        preview.setAttribute('contenteditable', 'true');
+        preview.focus();
+        editBtn.classList.add('is-active');
+        previewBtn.classList.remove('is-active');
+        hint.textContent = 'Editing — click "Preview" to save your changes.';
+    });
+
+    previewBtn.addEventListener('click', async () => {
+        if (preview.getAttribute('contenteditable') === 'true') {
+            await saveEdits();
+        }
+        preview.removeAttribute('contenteditable');
+        previewBtn.classList.add('is-active');
+        editBtn.classList.remove('is-active');
+    });
+
+    templateSelect.addEventListener('change', async () => {
+        preview.className = 'tpl-' + templateSelect.value;
+        try {
+            await fetch("{% url 'resume_builder:set_template' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: 'template=' + encodeURIComponent(templateSelect.value),
+            });
+        } catch (err) {
+            // Non-fatal: the preview still updates locally, and the PDF
+            // will just fall back to the previously saved template.
+        }
+    });
+</script>
+{% endif %}
 {% endblock %}

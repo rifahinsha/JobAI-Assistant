@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'admin_panel',
     'resume_builder',
     'career_roadmap',
+    'recruiter',
 ]
 
 MIDDLEWARE = [
@@ -138,3 +139,20 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+#   EMAIL_HOST_USER=youraddress@gmail.com
+#   EMAIL_HOST_PASSWORD=your16digitapppassword
+# (Generate the app password at https://myaccount.google.com/apppasswords
+#  — your normal Gmail login password will NOT work here.)
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
+DEFAULT_FROM_EMAIL = f"JobAI <{EMAIL_HOST_USER}>"
+
+# How long a reset link stays valid, in seconds. 5 minutes = 300 seconds.
+PASSWORD_RESET_TIMEOUT = 300

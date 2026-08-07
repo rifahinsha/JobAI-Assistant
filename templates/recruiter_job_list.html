@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Admin Dashboard | JobAI{% endblock %}
+{% block title %}My Job Postings | JobAI{% endblock %}
 
 {% block extra_style %}
 <style>
@@ -9,9 +9,9 @@
     .job-card h3 { margin: 0 0 4px 0; font-size: 1.05rem; }
     .job-meta { color: var(--ink-soft); font-size: 0.9em; margin-bottom: 8px; }
     .job-desc { font-size: 0.9em; color: var(--ink); max-height: 4.5em; overflow: hidden; margin-bottom: 8px; }
-    .job-salary { font-size: 0.85em; color: var(--green-deep); font-weight: 600; margin-bottom: 8px; }
+    .applicant-tag { font-size: 0.85em; color: var(--green-deep); font-weight: 600; margin-bottom: 8px; }
 
-    .job-actions { display: flex; gap: 8px; align-items: center; }
+    .job-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     .job-actions a, .job-actions button {
         display: inline-flex; align-items: center; gap: 6px;
         padding: 0.5rem 1.2rem; border-radius: 999px; border: none;
@@ -20,6 +20,8 @@
     }
     .job-actions a.edit-btn { background: var(--lime); color: var(--ink); }
     .job-actions a.edit-btn:hover { background: var(--lime-deep); }
+    .job-actions a.applicants-btn { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
+    .job-actions a.applicants-btn:hover { background: #fff; }
     .job-actions button.delete-btn { background: transparent; color: var(--err); border: 1.5px solid var(--err); }
     .job-actions button.delete-btn:hover { background: var(--err); color: #fff; }
     .job-actions button.delete-btn:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -31,12 +33,12 @@
 
 {% block content %}
 
-    {% url 'admin_panel:admin_index' as admin_index_url %}
+    {% url 'recruiter:dashboard' as recruiter_dashboard_url %}
     <div class="banner">
-        {% include "partials/nav.html" with nav_href=admin_index_url nav_label="Dashboard" nav_dark=True %}
+        {% include "partials/nav.html" with nav_href=recruiter_dashboard_url nav_label="Dashboard" nav_dark=True %}
         <div class="banner-body">
-            <span>Admin Panel</span>
-            <h2>Job Postings</h2>
+            <span>Recruiter Panel</span>
+            <h2>My Job Postings</h2>
         </div>
     </div>
 
@@ -52,7 +54,7 @@
         <div class="card">
             <div class="dash-header">
                 <h2>{{ jobs|length }} job{{ jobs|length|pluralize }} posted</h2>
-                <a class="btn-lime" href="{% url 'admin_panel:job_create' %}">+ Post New Job</a>
+                <a class="btn-lime" href="{% url 'recruiter:job_create' %}">+ Post New Job</a>
             </div>
 
             {% if jobs %}
@@ -60,14 +62,11 @@
                 <div class="job-card">
                     <h3>{{ job.title }}</h3>
                     <div class="job-meta">{{ job.company }} — {{ job.location }}</div>
-                    {% if job.salary_min or job.salary_max %}
-                    <div class="job-salary">Salary: ₹{{ job.salary_min|floatformat:0 }} - ₹{{ job.salary_max|floatformat:0 }}</div>
-                    {% endif %}
-                    <div class="job-salary">{{ job.applicant_count }} applicant{{ job.applicant_count|pluralize }}</div>
+                    <div class="applicant-tag">{{ job.applicant_count }} applicant{{ job.applicant_count|pluralize }}</div>
                     <div class="job-desc">{{ job.about_role|truncatewords:30 }}</div>
                     <div class="job-actions">
-                        <a class="edit-btn" href="{% url 'admin_panel:applicants' job.pk %}">View Applicants</a>
-                        <a class="edit-btn" href="{% url 'admin_panel:job_edit' job.pk %}">Edit</a>
+                        <a class="applicants-btn" href="{% url 'recruiter:applicants' job.pk %}">View Applicants</a>
+                        <a class="edit-btn" href="{% url 'recruiter:job_edit' job.pk %}">Edit</a>
                         <button class="delete-btn" data-id="{{ job.pk }}" onclick="deleteJob(this)">Delete</button>
                     </div>
                 </div>
@@ -75,7 +74,7 @@
             {% else %}
                 <div class="empty-state">
                     <span class="empty-icon" aria-hidden="true">🗂️</span>
-                    <p>No jobs posted yet.</p>
+                    <p>You haven't posted any jobs yet.</p>
                 </div>
             {% endif %}
         </div>
@@ -94,7 +93,7 @@
             btn.disabled = true;
             btn.textContent = 'Deleting...';
 
-            const res = await fetch(`/admin-panel/jobs/${id}/delete/`, {
+            const res = await fetch(`/recruiter/jobs/${id}/delete/`, {
                 method: 'POST',
                 headers: { 'X-CSRFToken': getCookie('csrftoken') },
             });

@@ -44,7 +44,7 @@
                 <div class="job-card">
                     <h3>{{ job.title }}</h3>
                     <div class="job-meta">{{ job.company }} — {{ job.location }}</div>
-                    <div class="job-desc">{{ job.description|truncatewords:30 }}</div>
+                    <div class="job-desc">{{ job.about_role|truncatewords:30 }}</div>                   
                     <div class="job-actions">
                         {% if job.url %}
                             <a href="{{ job.url }}" target="_blank" rel="noopener">Apply</a>

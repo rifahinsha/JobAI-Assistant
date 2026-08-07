@@ -8,6 +8,7 @@ from django.views.decorators.http import require_GET, require_POST
 from .engine.graph import graph
 from .engine.state import new_state
 from .engine.pdf_report import build_roadmap_pdf
+from .engine.resource_agents import parse_resources
 
 
 def _body(request) -> dict:
@@ -58,7 +59,10 @@ def generate(request):
         "validation": result["validation"],
     }
 
-    return JsonResponse({"success": True, "data": request.session["roadmap_result"]})
+    response_data = dict(request.session["roadmap_result"])
+    response_data["resources_list"] = parse_resources(result["resources"])
+
+    return JsonResponse({"success": True, "data": response_data})
 
 
 @login_required(login_url="login")

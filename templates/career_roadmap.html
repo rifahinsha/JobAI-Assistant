@@ -33,9 +33,20 @@
     #results h3, #results h4 { color: var(--ink); }
     #results h4 { margin-top: 20px; margin-bottom: 6px; }
 
-    .skill-tag { display: inline-block; padding: 3px 10px; margin: 2px; border-radius: 999px; font-size: 0.85em; font-weight: 500; }
+    .skill-tag { display: inline-block; padding: 3px 10px; margin: 2px; border-radius: 999px; font-size: 0.85em; font-weight: 500; text-decoration: none; cursor: pointer; transition: filter 0.15s ease; }
+    .skill-tag:hover { filter: brightness(0.94); }
     .skill-required { background: rgba(139, 214, 80, 0.18); color: var(--green-deep); }
     .skill-missing { background: rgba(217, 83, 79, 0.12); color: var(--err); }
+
+    .resource-card {
+        border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 14px;
+        background: var(--paper-soft); margin-bottom: 10px;
+    }
+    .resource-card .resource-skill { font-weight: 700; color: var(--ink); margin-bottom: 6px; }
+    .resource-card .resource-row { font-size: 0.88rem; margin: 3px 0; color: var(--ink-soft); }
+    .resource-card .resource-row a { color: var(--green-deep); font-weight: 600; text-decoration: none; }
+    .resource-card .resource-row a:hover { text-decoration: underline; }
+    .resource-label { display: inline-block; min-width: 90px; color: var(--ink); font-weight: 600; }
 
     .roadmap-block {
         white-space: pre-wrap; word-wrap: break-word;
@@ -95,7 +106,7 @@
                 <pre class="roadmap-block" id="roadmap-text"></pre>
 
                 <h4>Learning Resources</h4>
-                <pre class="roadmap-block" id="resources-text"></pre>
+                <div id="resources-list"></div>
 
                 <h4>Project Recommendations</h4>
                 <pre class="roadmap-block" id="projects-text"></pre>
@@ -125,11 +136,36 @@
             errorBox.textContent = "";
         }
 
+        function youtubeSearchUrl(skill) {
+            return `https://www.youtube.com/results?search_query=${encodeURIComponent(skill + " tutorial")}`;
+        }
+
         function tagList(elId, items, cls) {
             const el = document.getElementById(elId);
             el.innerHTML = items && items.length
-                ? items.map(s => `<span class="skill-tag ${cls}">${s}</span>`).join("")
+                ? items.map(s => `<a class="skill-tag ${cls}" href="${youtubeSearchUrl(s)}" target="_blank" rel="noopener" title="Watch a video on ${s}">${s}</a>`).join("")
                 : "None";
+        }
+
+        function renderResourceRow(label, name, link) {
+            if (!name) return "";
+            return `<div class="resource-row"><span class="resource-label">${label}:</span> <a href="${link}" target="_blank" rel="noopener">${name}</a></div>`;
+        }
+
+        function renderResources(resourcesList, fallbackText) {
+            const el = document.getElementById("resources-list");
+            if (resourcesList && resourcesList.length) {
+                el.innerHTML = resourcesList.map(r => `
+                    <div class="resource-card">
+                        <div class="resource-skill">${r.skill}</div>
+                        ${renderResourceRow("Course", r.course, r.course_link)}
+                        ${renderResourceRow("Docs", r.documentation, r.documentation_link)}
+                        ${renderResourceRow("Practice", r.practice, r.practice_link)}
+                    </div>
+                `).join("");
+            } else {
+                el.innerHTML = `<pre class="roadmap-block">${fallbackText || "No resources found."}</pre>`;
+            }
         }
 
         function renderResults(data) {
@@ -140,7 +176,7 @@
             tagList("required-skills", data.required_skills, "skill-required");
             tagList("missing-skills", data.missing_skills, "skill-missing");
             document.getElementById("roadmap-text").textContent = data.roadmap;
-            document.getElementById("resources-text").textContent = data.resources;
+            renderResources(data.resources_list, data.resources);
             document.getElementById("projects-text").textContent = data.projects;
             document.getElementById("validation-text").textContent = data.validation;
         }

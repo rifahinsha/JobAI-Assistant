@@ -18,7 +18,6 @@ class Migration(migrations.Migration):
                 ('title', models.CharField(max_length=255)),
                 ('company', models.CharField(blank=True, max_length=255)),
                 ('location', models.CharField(blank=True, max_length=255)),
-                ('description', models.TextField(blank=True)),
                 ('url', models.URLField(blank=True, max_length=500)),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
             ],

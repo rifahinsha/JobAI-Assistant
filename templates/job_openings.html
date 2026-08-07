@@ -54,6 +54,14 @@
         </div>
     </div>
 
+    {% if messages %}
+    <ul class="notices">
+        {% for message in messages %}
+            <li data-tag="{{ message.tags  }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
     <div class="content-wrap content-wrap--wide">
 
         {% if posted_jobs %}
@@ -65,9 +73,20 @@
             <div class="job-card">
                 <h3>{{ job.title }}</h3>
                 <div class="job-meta">{{ job.company }} — {{ job.location }}</div>
-                <div class="job-desc">{{ job.description|truncatewords:30 }}</div>
+                <div class="job-desc">{{ job.about_role|truncatewords:30 }}</div>
                 <div class="job-actions">
-                    {% if job.url %}
+                    <a href="{% url 'job_detail' job.pk %}">View Details</a>
+                    {% if job.posted_by_id %}
+                        {% if job.pk in applied_job_ids %}
+                        <button type="button" disabled>Applied ✓</button>
+                        {% else %}
+                        <form action="{% url 'recruiter:apply_job' job.pk %}" method="post" enctype="multipart/form-data" style="display:inline-flex; gap:6px; align-items:center;">
+                            {% csrf_token %}
+                            <input type="file" name="cv" accept=".pdf,.doc,.docx" required style="font-size: 0.8em; max-width: 160px;">
+                            <button type="submit">Apply</button>
+                        </form>
+                        {% endif %}
+                    {% elif job.url %}
                         <a href="{{ job.url }}" target="_blank" rel="noopener">Apply</a>
                     {% endif %}
                     {% with admin_id="admin-"|add:job.pk|stringformat:"s" %}
@@ -78,7 +97,7 @@
                         data-title="{{ job.title }}"
                         data-company="{{ job.company }}"
                         data-location="{{ job.location }}"
-                        data-description="{{ job.description }}"
+                        data-description="{{ job.about_role }}"
                         data-url="{{ job.url }}"
                         {% if admin_id in saved_admin_ids %}disabled{% endif %}
                     >{% if admin_id in saved_admin_ids %}Saved ✓{% else %}Save{% endif %}</button>

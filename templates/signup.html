@@ -6,6 +6,31 @@
 {% block extra_style %}
 <style>
     .auth-wrap { max-width: 520px; margin: 0 auto; padding: 3rem clamp(1.25rem, 4vw, 2rem) 4.5rem; }
+
+    .role-toggle { display: flex; gap: 10px; margin-bottom: 1.1rem; }
+    .role-option { flex: 1; position: relative; cursor: pointer; }
+    .role-option input { position: absolute; opacity: 0; inset: 0; cursor: pointer; margin: 0; }
+    .role-option span {
+        display: flex; align-items: center; justify-content: center; gap: 0.4rem;
+        padding: 0.75rem 1rem; border-radius: 12px; border: 1.5px solid var(--border);
+        background: var(--paper-soft); font-weight: 600; font-size: 0.92rem; color: var(--ink-soft);
+        transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .role-option input:checked + span {
+        background: var(--lime); border-color: var(--lime-deep); color: var(--ink);
+    }
+    .role-option input:focus-visible + span { outline: 2px solid var(--green-mid); outline-offset: 2px; }
+
+    /* Password field with eye toggle */
+    .password-field { position: relative; display: flex; align-items: center; }
+    .password-field input { width: 100%; padding-right: 42px; box-sizing: border-box; }
+    .toggle-password {
+        position: absolute; right: 10px;
+        background: transparent; border: none; cursor: pointer;
+        font-size: 1.1rem; line-height: 1; padding: 4px;
+        color: var(--ink-soft);
+    }
+    .toggle-password:hover { color: var(--ink); }
 </style>
 {% endblock %}
 
@@ -30,25 +55,52 @@
 
     <div class="auth-wrap">
         <div class="card">
-            <form action="{% url 'signup' %}" method="post">
+            <form action="{% url 'signup' %}" method="post" id="signup-form">
                 {% csrf_token %}
 
                 <div class="field-group">
+                    <label>SignIn as</label>
+                    <div class="role-toggle">
+                        <label class="role-option">
+                            <input type="radio" name="role" value="jobseeker" id="role-jobseeker" checked>
+                            <span>Job Seeker</span>
+                        </label>
+                        <label class="role-option">
+                            <input type="radio" name="role" value="recruiter" id="role-recruiter">
+                            <span>Recruiter</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Shared: username -->
+                <div class="field-group">
                     <label for="username">Username</label>
-                    <input type="text" id="username" name="username" placeholder="Enter your username" required>
+                    <input type="text" id="username" name="username" placeholder="Choose a username" required>
                 </div>
 
-                <div class="field-row">
-                    <div class="field-group">
-                        <label for="fname">First Name</label>
-                        <input type="text" id="fname" name="fname" placeholder="Enter your first name" required>
-                    </div>
-                    <div class="field-group">
-                        <label for="lname">Last Name</label>
-                        <input type="text" id="lname" name="lname" placeholder="Enter your last name" required>
+                <!-- Job Seeker only fields -->
+                <div id="jobseeker-fields">
+                    <div class="field-row">
+                        <div class="field-group">
+                            <label for="fname">First Name</label>
+                            <input type="text" id="fname" name="fname" placeholder="Enter your first name" required>
+                        </div>
+                        <div class="field-group">
+                            <label for="lname">Last Name</label>
+                            <input type="text" id="lname" name="lname" placeholder="Enter your last name" required>
+                        </div>
                     </div>
                 </div>
 
+                <!-- Recruiter only fields -->
+                <div id="recruiter-fields" style="display: none;">
+                    <div class="field-group">
+                        <label for="company_name">Company Name</label>
+                        <input type="text" id="company_name" name="company_name" placeholder="Enter your company name" disabled>
+                    </div>
+                </div>
+
+                <!-- Shared fields -->
                 <div class="field-group">
                     <label for="email">Email</label>
                     <input type="email" id="email" name="email" placeholder="Enter your email" required>
@@ -62,11 +114,31 @@
                 <div class="field-row">
                     <div class="field-group">
                         <label for="password">Password</label>
-                        <input type="password" id="password" name="password" placeholder="Create a password" required>
+                        <div class="password-field">
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                placeholder="Create a password (min. 8 characters)"
+                                minlength="8"
+                                required
+                            >
+                            <button type="button" class="toggle-password" data-target="password" aria-label="Show password">👁️</button>
+                        </div>
                     </div>
                     <div class="field-group">
                         <label for="confirm_password">Confirm Password</label>
-                        <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirm your password" required>
+                        <div class="password-field">
+                            <input
+                                type="password"
+                                id="confirm_password"
+                                name="confirm_password"
+                                placeholder="Confirm your password"
+                                minlength="8"
+                                required
+                            >
+                            <button type="button" class="toggle-password" data-target="confirm_password" aria-label="Show password">👁️</button>
+                        </div>
                     </div>
                 </div>
 
@@ -78,5 +150,64 @@
             <p class="muted-note">Already have an account? <a href="{% url 'login' %}">Log In</a></p>
         </div>
     </div>
+
+    <script>
+        const jobseekerRadio = document.getElementById('role-jobseeker');
+        const recruiterRadio = document.getElementById('role-recruiter');
+        const jobseekerFields = document.getElementById('jobseeker-fields');
+        const recruiterFields = document.getElementById('recruiter-fields');
+
+        const jobseekerInputs = jobseekerFields.querySelectorAll('input');
+        const recruiterInputs = recruiterFields.querySelectorAll('input');
+
+        function showJobseekerFields() {
+            jobseekerFields.style.display = '';
+            recruiterFields.style.display = 'none';
+
+            jobseekerInputs.forEach(el => { el.disabled = false; el.required = true; });
+            recruiterInputs.forEach(el => { el.disabled = true; el.required = false; });
+        }
+
+        function showRecruiterFields() {
+            jobseekerFields.style.display = 'none';
+            recruiterFields.style.display = '';
+
+            jobseekerInputs.forEach(el => { el.disabled = true; el.required = false; });
+            recruiterInputs.forEach(el => { el.disabled = false; el.required = true; });
+        }
+
+        jobseekerRadio.addEventListener('change', () => { if (jobseekerRadio.checked) showJobseekerFields(); });
+        recruiterRadio.addEventListener('change', () => { if (recruiterRadio.checked) showRecruiterFields(); });
+
+        // Initialize based on whichever is checked by default (job seeker).
+        if (recruiterRadio.checked) { showRecruiterFields(); } else { showJobseekerFields(); }
+
+        // Eye toggle for password fields
+        document.querySelectorAll('.toggle-password').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const input = document.getElementById(btn.dataset.target);
+                const isHidden = input.type === 'password';
+                input.type = isHidden ? 'text' : 'password';
+                btn.textContent = isHidden ? '🙈' : '👁️';
+                btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+            });
+        });
+
+        // Confirm-password match check (client-side, in addition to server-side check)
+        const form = document.getElementById('signup-form');
+        form.addEventListener('submit', (e) => {
+            const pw = document.getElementById('password').value;
+            const confirmPw = document.getElementById('confirm_password').value;
+            if (pw.length < 8) {
+                e.preventDefault();
+                alert('Password must be at least 8 characters long.');
+                return;
+            }
+            if (pw !== confirmPw) {
+                e.preventDefault();
+                alert('Passwords do not match.');
+            }
+        });
+    </script>
 
 {% endblock %}

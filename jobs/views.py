@@ -38,7 +38,6 @@ def get_jobs(request):
             "title": j.get("title"),
             "company": j.get("company", {}).get("display_name"),
             "location": j.get("location", {}).get("display_name"),
-            "description": j.get("description"),
             "salary_min": j.get("salary_min"),
             "salary_max": j.get("salary_max"),
             "url": j.get("redirect_url"),

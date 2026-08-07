@@ -1,10 +1,9 @@
 import json
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_list_or_404, get_object_or_404
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect
 from authentication.models import Profile, SavedJob
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
@@ -21,14 +20,18 @@ def landing(request):
 
 @login_required(login_url='login')
 def dashboard(request):
-    return render(request, 'index.html')
+    if getattr(request.user, 'profile', None) and request.user.profile.is_recruiter:
+        return redirect('recruiter:dashboard')
+    return render(request, 'user_index.html')
 
 
 def signup(request):
     if request.method == 'POST':
+        role = request.POST.get('role', Profile.ROLE_JOBSEEKER)
+        if role not in dict(Profile.ROLE_CHOICES):
+            role = Profile.ROLE_JOBSEEKER
+
         username = request.POST.get('username')
-        fname = request.POST.get('fname')
-        lname = request.POST.get('lname')
         email = request.POST.get('email')
         phone_number = request.POST.get('phone_number')
         password = request.POST.get('password')
@@ -38,22 +41,56 @@ def signup(request):
             messages.error(request, "Passwords do not match.")
             return redirect('signup')
 
+        if not password or len(password) < 8:
+            messages.error(request, "Password must be at least 8 characters long.")
+            return redirect('signup')
+
+        if not username:
+            messages.error(request, "Username is required.")
+            return redirect('signup')
+
         if User.objects.filter(username=username).exists():
             messages.error(request, "Username already taken.")
+            return redirect('signup')
+
+        if not email:
+            messages.error(request, "Email is required.")
             return redirect('signup')
 
         if User.objects.filter(email=email).exists():
             messages.error(request, "Email already registered.")
             return redirect('signup')
 
-        myuser = User.objects.create_user(username, email, password)
-        myuser.first_name = fname
-        myuser.last_name = lname
-        myuser.save()
+        if role == Profile.ROLE_RECRUITER:
+            company_name = request.POST.get('company_name', '').strip()
 
-        profile, _ = Profile.objects.get_or_create(user=myuser)
-        profile.phone_number = phone_number
-        profile.save()
+            if not company_name:
+                messages.error(request, "Company name is required.")
+                return redirect('signup')
+
+            myuser = User.objects.create_user(username, email, password)
+            myuser.first_name = company_name
+            myuser.save()
+
+            profile, _ = Profile.objects.get_or_create(user=myuser)
+            profile.phone_number = phone_number
+            profile.role = role
+            profile.company_name = company_name
+            profile.save()
+
+        else:
+            fname = request.POST.get('fname')
+            lname = request.POST.get('lname')
+
+            myuser = User.objects.create_user(username, email, password)
+            myuser.first_name = fname
+            myuser.last_name = lname
+            myuser.save()
+
+            profile, _ = Profile.objects.get_or_create(user=myuser)
+            profile.phone_number = phone_number
+            profile.role = role
+            profile.save()
 
         messages.success(request, "Account Created! Log In With Your Username and Password.")
         return redirect('login')
@@ -96,8 +133,7 @@ def logout(request):
 
 @login_required
 def profile(request):
-    saved_jobs = request.user.saved_jobs.all()
-    return render(request, "profile.html", {"saved_jobs": saved_jobs,})
+    return render(request, "profile.html")
 
 
 @login_required(login_url="login")
@@ -162,13 +198,39 @@ def job_openings(request):
         request.user.saved_jobs.filter(adzuna_id__startswith="admin-")
         .values_list("adzuna_id", flat=True)
     )
-    return render(request, "job_openings.html", {"posted_jobs": posted_jobs, "saved_admin_ids" : saved_admin_ids})
+    applied_job_ids = set(
+        request.user.applications.values_list("job_id", flat=True)
+    )
+    return render(request, "job_openings.html", {
+        "posted_jobs": posted_jobs,
+        "saved_admin_ids": saved_admin_ids,
+        "applied_job_ids": applied_job_ids,
+    })
 
 
 @login_required(login_url="login")
-def saved_jobs(request):
-    jobs=request.user.saved_jobs.all().order_by('-saved_at')
-    return render(request,'saved_jobs.html',{"saved_jobs":jobs})
+def job_detail(request, pk):
+    job = get_object_or_404(Job, pk=pk)
+    already_applied = request.user.applications.filter(job=job).exists()
+    is_owner = job.posted_by_id == request.user.id
+    return render(request, "job_detail.html", {
+        "job": job,
+        "already_applied": already_applied,
+        "is_owner": is_owner,
+    })
+
+
+@login_required(login_url='login')
+def jobs_dashboard(request):
+    """Combined Saved Jobs + Applied Jobs page (two tabs/windows in one template)."""
+    saved_jobs = request.user.saved_jobs.all().order_by('-saved_at')
+    applications = (
+        request.user.applications.select_related('job').order_by('-applied_at')
+    )
+    return render(request, 'applied_saved_jobs.html', {
+        "saved_jobs": saved_jobs,
+        "applications": applications,
+    })
 
 
 @login_required(login_url="login")

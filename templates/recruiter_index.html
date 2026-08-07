@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Recruiter Dashboard | JobAI{% endblock %}
+
+{% block extra_style %}
+<style>
+    .tools-section { max-width: 1100px; margin: 0 auto; padding: 3rem clamp(1.25rem, 4vw, 2rem) 4.5rem; }
+    .tools-heading { text-align: center; margin-bottom: 2.2rem; }
+    .tools-heading span {
+        display: inline-block; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.06em;
+        text-transform: uppercase; color: var(--lime-deep); margin-bottom: 0.5rem;
+    }
+    .tools-heading h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 700; margin: 0; color: var(--ink); }
+
+    .stat-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1.2rem; margin-bottom: 2.4rem;
+    }
+    .stat-card {
+        background: var(--paper-soft); border-radius: 16px; padding: 1.4rem 1.5rem; text-align: center;
+    }
+    .stat-card .stat-value { font-size: 2rem; font-weight: 700; color: var(--green-deep); }
+    .stat-card .stat-label { font-size: 0.85rem; color: var(--ink-soft); margin-top: 0.2rem; }
+
+    .tool-grid {
+        list-style: none; margin: 0; padding: 0;
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1.4rem;
+    }
+    .tool-card {
+        position: relative; display: block; background: var(--paper-soft); border-radius: 18px;
+        padding: 1.7rem 1.5rem 1.9rem; text-decoration: none; color: inherit;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+    .tool-card:hover, .tool-card:focus-visible {
+        transform: translateY(-4px); box-shadow: 0 16px 32px -18px rgba(22, 60, 44, 0.4); background: #fff;
+    }
+    .tool-icon {
+        width: 46px; height: 46px; border-radius: 12px; background: var(--green-deep); color: var(--lime);
+        display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-bottom: 1.1rem;
+    }
+    .tool-card h3 { font-size: 1.08rem; font-weight: 600; margin: 0 0 0.4rem; }
+    .tool-card p { font-size: 0.88rem; color: var(--ink-soft); margin: 0; line-height: 1.45; }
+    .tool-arrow {
+        position: absolute; bottom: 1.6rem; right: 1.5rem; width: 30px; height: 30px; border-radius: 50%;
+        background: var(--lime); color: var(--ink); display: flex; align-items: center; justify-content: center;
+        font-size: 0.9rem; transition: transform 0.18s ease;
+    }
+
+    .recent-list { margin-top: 2.4rem; }
+    .recent-row {
+        display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+        padding: 0.9rem 0; border-bottom: 1px solid var(--border);
+    }
+    .recent-row:last-child { border-bottom: none; }
+    .recent-row .name { font-weight: 600; }
+    .recent-row .meta { font-size: 0.85rem; color: var(--ink-soft); }
+    .status-pill {
+        font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.7rem; border-radius: 999px;
+        background: var(--lime); color: var(--ink); text-transform: capitalize;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    {% url 'logout' as logout_url %}
+    <div class="banner">
+        {% include "partials/nav.html" with nav_href=logout_url nav_label="Log Out" nav_dark=True %}
+        <div class="banner-body">
+            <span>● Recruiter Panel</span>
+            <h2>Welcome back, {{ user.first_name|default:user.username }}</h2>
+        </div>
+    </div>
+
+    {% if messages %}
+    <ul class="notices">
+        {% for message in messages %}
+            <li data-tag="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="tools-section">
+        <div class="stat-grid">
+            <a class="stat-card" href="{% url 'recruiter:job_list' %}" style="text-decoration: none; color: inherit; display: block;">
+                <div class="stat-value">{{ job_count }}</div>
+                <div class="stat-label">Jobs posted</div>
+            </a>
+            <a class="stat-card" href="{% url 'recruiter:job_list' %}" style="text-decoration: none; color: inherit; display: block;">
+                <div class="stat-value">{{ applicant_count }}</div>
+                <div class="stat-label">Total applicants</div>
+            </a>
+            <a class="stat-card" href="{%  url 'recruiter:shortlisted_candidates' %}" style="text-decoration: none; color: inherit; display: block;">
+                <div class="stat-value">{{ shortlisted_count }}</div>
+                <div class="stat-label">Shortlisted</div>
+            </a>
+        </div>
+
+        <div class="tools-heading">
+            <span>Recruiter toolkit</span>
+            <h2>Manage your hiring</h2>
+        </div>
+        <ul class="tool-grid">
+            <li>
+                <a class="tool-card" href="{% url 'recruiter:job_list' %}">
+                    <span class="tool-icon" aria-hidden="true">🗂️</span>
+                    <h3>My Job Postings</h3>
+                    <p>Post new roles and edit or remove your existing listings.</p>
+                    <span class="tool-arrow" aria-hidden="true">→</span>
+                </a>
+            </li>
+            <li>
+                <a class="tool-card" href="{% url 'recruiter:job_create' %}">
+                    <span class="tool-icon" aria-hidden="true">➕</span>
+                    <h3>Post a New Job</h3>
+                    <p>Create a new listing that job seekers can find and apply to.</p>
+                    <span class="tool-arrow" aria-hidden="true">→</span>
+                </a>
+            </li>
+            <li>
+                <a class="tool-card" href="{% url 'recruiter:shortlisted_candidates' %}">
+                    <span class="tool-icon" aria-hidden="true">⭐</span>
+                    <h3>Shortlisted Candidates</h3>
+                    <p>See every candidate you've shortlisted across all your job postings.</p>
+                    <span class="tool-arrow" aria-hidden="true">→</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+{% endblock %}

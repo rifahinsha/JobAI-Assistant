@@ -13,6 +13,7 @@ urlpatterns = [
     path('interview-api/', include('mock_interview.urls')),
     path('resume-builder/', include('resume_builder.urls')),
     path('roadmap-api/', include('career_roadmap.urls')),
+    path('recruiter/', include('recruiter.urls')),
 ]
 
 if settings.DEBUG:

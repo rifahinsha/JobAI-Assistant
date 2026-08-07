@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ job.title }} | JobAI{% endblock %}
+
+{% block extra_style %}
+<style>
+    .job-detail-header { margin-bottom: 1.6rem; }
+    .job-detail-header h2 { margin: 0 0 0.3rem; font-size: 1.4rem; }
+    .job-detail-meta { color: var(--ink-soft); font-size: 0.95rem; }
+    .job-detail-section { margin: 1.4rem 0; }
+    .job-detail-section h3 {
+        font-size: 0.95rem; font-weight: 700; color: var(--green-deep);
+        text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 0.5rem;
+        border-bottom: 1px solid var(--border); padding-bottom: 0.3rem;
+    }
+    .job-detail-section p { white-space: pre-line; color: var(--ink); line-height: 1.6; margin: 0; }
+    .contact-line { font-size: 0.9rem; color: var(--ink-soft); }
+    .contact-line a { color: var(--green-deep); font-weight: 600; }
+    .job-actions { display: flex; gap: 0.8rem; margin-top: 1.6rem; flex-wrap: wrap; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    {% url 'job_openings' as job_openings_url %}
+    <div class="banner">
+        {% include "partials/nav.html" with nav_href=job_openings_url nav_label="Back to Job Openings" nav_dark=True %}
+        <div class="banner-body">
+            <span>Job Detail</span>
+            <h2>{{ job.title }}</h2>
+        </div>
+    </div>
+
+    {% if messages %}
+    <ul class="notices">
+        {% for message in messages %}
+            <li data-tag="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="content-wrap">
+        <div class="card">
+            <div class="job-detail-header">
+                <h2>{{ job.title }}</h2>
+                <div class="job-detail-meta">{{ job.company }} — {{ job.location|default:"Remote" }} · Posted {{ job.created_at|date:"M d, Y" }}</div>
+            </div>
+
+            {% if job.about_role %}
+            <div class="job-detail-section">
+                <h3>About the Role</h3>
+                <p>{{ job.about_role }}</p>
+            </div>
+            {% endif %}
+
+            {% if job.key_responsibilities %}
+            <div class="job-detail-section">
+                <h3>Key Responsibilities</h3>
+                <p>{{ job.key_responsibilities }}</p>
+            </div>
+            {% endif %}
+
+            {% if job.required_skills %}
+            <div class="job-detail-section">
+                <h3>Required Skills</h3>
+                <p>{{ job.required_skills }}</p>
+            </div>
+            {% endif %}
+
+            {% if job.what_we_offer %}
+            <div class="job-detail-section">
+                <h3>What We Offer</h3>
+                <p>{{ job.what_we_offer }}</p>
+            </div>
+            {% endif %}
+
+            {% if job.contact_email %}
+            <div class="job-detail-section">
+                <div class="contact-line">Questions about this role? Contact <a href="mailto:{{ job.contact_email }}">{{ job.contact_email }}</a></div>
+            </div>
+            {% endif %}
+
+            <div class="job-actions">
+                {% if is_owner %}
+                    <span class="resume-status">This is your job posting.</span>
+                {% elif job.posted_by_id %}
+                    {% if already_applied %}
+                        <button type="button" disabled>Applied ✓</button>
+                    {% else %}
+                        <form action="{% url 'recruiter:apply_job' job.pk %}" method="post" enctype="multipart/form-data" style="display:inline-flex; gap:8px; align-items:center;">
+                            {% csrf_token %}
+                            <input type="file" name="cv" accept=".pdf,.doc,.docx" required>
+                            <button type="submit">Apply Now</button>
+                        </form>
+                    {% endif %}
+                {% elif job.url %}
+                    <a class="btn-lime" href="{{ job.url }}" target="_blank" rel="noopener">Apply on Employer Site</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+{% endblock %}

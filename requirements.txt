@@ -10,3 +10,4 @@ beautifulsoup4>=4.12
 langgraph>=0.2
 tavily-python>=0.5
 fpdf2>=2.7
+xhtml2pdf>=0.2.15

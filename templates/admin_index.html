@@ -18,6 +18,16 @@
     }
     .tools-heading h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 700; margin: 0; color: var(--ink); }
 
+    .stat-grid {
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1.2rem; margin-bottom: 2.4rem;
+    }
+    .stat-card {
+        background: var(--paper-soft); border-radius: 16px; padding: 1.4rem 1.5rem; text-align: center;
+    }
+    .stat-card .stat-value { font-size: 2rem; font-weight: 700; color: var(--green-deep); }
+    .stat-card .stat-label { font-size: 0.85rem; color: var(--ink-soft); margin-top: 0.2rem; }
+
     .tool-grid {
         list-style: none;
         margin: 0; padding: 0;
@@ -72,6 +82,19 @@
         background: #E7ECE8; color: var(--ink-soft);
         padding: 0.25rem 0.6rem; border-radius: 999px;
     }
+
+    .recent-list { margin-top: 2.4rem; }
+    .recent-row {
+        display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+        padding: 0.9rem 0; border-bottom: 1px solid var(--border);
+    }
+    .recent-row:last-child { border-bottom: none; }
+    .recent-row .name { font-weight: 600; }
+    .recent-row .meta { font-size: 0.85rem; color: var(--ink-soft); }
+    .status-pill {
+        font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.7rem; border-radius: 999px;
+        background: var(--lime); color: var(--ink); text-transform: capitalize;
+    }
 </style>
 {% endblock %}
 
@@ -95,6 +118,21 @@
     {% endif %}
 
     <div class="tools-section">
+        <div class="stat-grid">
+            <div class="stat-card" href="{% url 'admin_panel:job_list' %}" style="text-decoration: none; color: inherit; display: block;">
+                <div class="stat-value">{{ job_count }}</div>
+                <div class="stat-label">Jobs posted</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ user_count }}</div>
+                <div class="stat-label">Registered users</div>
+            </div>
+            <a class="stat-card" href="{% url 'admin_panel:shortlisted_candidates' %}" style="text-decoration: none; color: inherit; display: block;">
+                <div class="stat-value">{{ application_count }}</div>
+                <div class="stat-label">Applications</div>
+            </a>
+        </div>
+
         <div class="tools-heading">
             <span>Admin toolkit</span>
             <h2>Manage the platform</h2>
@@ -109,11 +147,11 @@
                 </a>
             </li>
             <li>
-                <a class="tool-card is-disabled" aria-disabled="true">
-                    <span class="soon-tag">Soon</span>
-                    <span class="tool-icon" aria-hidden="true">🛡️</span>
-                    <h3>Scam Detection</h3>
-                    <p>Review flagged listings for suspicious content.</p>
+                <a class="tool-card" href="{% url 'admin_panel:shortlisted_candidates' %}">
+                    <span class="tool-icon" aria-hidden="true">⭐</span>
+                    <h3>Shortlisted Candidates</h3>
+                    <p>Review every candidate shortlisted across all job postings.</p>
+                    <span class="tool-arrow" aria-hidden="true">→</span>
                 </a>
             </li>
         </ul>

@@ -11,7 +11,7 @@ urlpatterns = [
     path('profile/', views.profile, name="profile"),
     path('edit_profile/', views.edit_profile, name="edit_profile"),
     path('save_job/', views.save_job, name="save_job"),
-    path('saved_jobs/', views.saved_jobs, name="saved_jobs"),
+    path('jobs-dashboard/', views.jobs_dashboard, name="jobs_dashboard"),
     path('unsave_job/', views.unsave_job, name="unsave_job"),
     path('posted_jobs', views.posted_jobs, name="posted_jobs"),
     path('chatbot/', views.chatbot, name="chatbot"),
@@ -19,5 +19,6 @@ urlpatterns = [
     path('mock_interview/', views.mock_interview, name="mock_interview"),
     path('career_roadmap', views.career_roadmap, name="career_roadmap"),
     path('job_openings/', views.job_openings, name='job_openings'),
-    path('email_cv/',views.email_cv,name="email_cv"),
+    path('jobs/<int:pk>/', views.job_detail, name='job_detail'),
+    path('email_cv/', views.email_cv, name="email_cv"),
 ]

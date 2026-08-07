@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Applicants | {{ job.title }}{% endblock %}
+
+{% block extra_style %}
+<style>
+    .applicant-card {
+        border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 14px;
+        background: var(--paper-soft); display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;
+    }
+    .applicant-card .name { font-weight: 600; font-size: 1.02rem; }
+    .applicant-card .meta { font-size: 0.85em; color: var(--ink-soft); margin-top: 2px; }
+    .applicant-card .cover-note { font-size: 0.88em; color: var(--ink); margin-top: 8px; max-width: 60ch; }
+
+    .applicant-actions {
+        display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+    }
+
+    .cv-link {
+        font-size: 0.85em; font-weight: 600; text-decoration: none; color: var(--ink);
+        padding: 0.45rem 0.8rem; border: 1.5px solid var(--border); border-radius: 999px;
+        white-space: nowrap;
+    }
+    .cv-link:hover { background: var(--paper-soft); }
+
+    .no-cv {
+        font-size: 0.82em; color: var(--ink-soft); font-style: italic; white-space: nowrap;
+    }
+
+    .shortlist-btn {
+        padding: 0.45rem 0.9rem; border-radius: 999px; border: 1.5px solid var(--border);
+        background: #fff; font-family: inherit; font-size: 0.85em; font-weight: 600; cursor: pointer;
+        white-space: nowrap;
+    }
+    .shortlist-btn:hover:not(:disabled) { background: var(--paper-soft); }
+    .shortlist-btn:disabled {
+        background: #fff7d6; border-color: #e8c84a; color: #8a6d00; cursor: default;
+    }
+
+    select.status-select {
+        padding: 0.5rem 0.9rem; border-radius: 999px; border: 1.5px solid var(--border);
+        background: #fff; font-family: inherit; font-size: 0.88em; font-weight: 600; cursor: pointer;
+    }
+    .dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+    .dash-header h2 { margin: 0; font-size: 1.1rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+    {% url 'recruiter:job_list' as job_list_url %}
+    <div class="banner">
+        {% include "partials/nav.html" with nav_href=job_list_url nav_label="My Jobs" nav_dark=True %}
+        <div class="banner-body">
+            <span>Recruiter Panel</span>
+            <h2>Applicants for {{ job.title }}</h2>
+        </div>
+    </div>
+
+    {% if messages %}
+    <ul class="notices">
+        {% for message in messages %}
+            <li data-tag="{{ message.tags }}">{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="content-wrap content-wrap--wide">
+        <div class="card">
+            <div class="dash-header">
+                <h2>{{ applications|length }} applicant{{ applications|length|pluralize }}</h2>
+            </div>
+
+            {% if applications %}
+                {% for app in applications %}
+                <div class="applicant-card" data-app-id="{{ app.pk }}">
+                    <div>
+                        <div class="name">{{ app.applicant.get_full_name|default:app.applicant.username }}</div>
+                        <div class="meta">{{ app.applicant.email }}{% if app.applicant.profile.phone_number %} · {{ app.applicant.profile.phone_number }}{% endif %} · Applied {{ app.applied_at|date:"M d, Y" }}</div>
+                        {% if app.cover_note %}
+                        <div class="cover-note">{{ app.cover_note }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="applicant-actions">
+                        {% if app.cv %}
+                        <a class="cv-link" href="{{ app.cv.url }}" target="_blank" rel="noopener">📄 View CV</a>
+                        {% else %}
+                        <span class="no-cv">No CV attached</span>
+                        {% endif %}
+                        <button
+                            type="button"
+                            class="shortlist-btn"
+                            onclick="shortlist(this)"
+                            {% if app.status == 'shortlisted' %}disabled{% endif %}
+                        >{% if app.status == 'shortlisted' %}★ Shortlisted{% else %}☆ Shortlist{% endif %}</button>
+                        <select class="status-select" onchange="updateStatus(this)">
+                            {% for value, label in app.STATUS_CHOICES %}
+                            <option value="{{ value }}" {% if app.status == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <span class="empty-icon" aria-hidden="true">🧑‍💼</span>
+                    <p>No one has applied to this job yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function getCookie(name) {
+            const match = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+            return match ? match.pop() : '';
+        }
+
+        async function updateStatus(select) {
+            const card = select.closest('.applicant-card');
+            const appId = card.dataset.appId;
+            const previous = select.dataset.previous || select.value;
+            select.disabled = true;
+
+            try {
+                const res = await fetch(`/recruiter/applications/${appId}/status/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: `status=${encodeURIComponent(select.value)}`,
+                });
+
+                if (!res.ok) throw new Error('Update failed');
+                select.dataset.previous = select.value;
+            } catch (err) {
+                select.value = previous;
+                alert("Couldn't update status. Please try again.");
+            } finally {
+                select.disabled = false;
+            }
+        }
+
+        async function shortlist(btn) {
+            const card = btn.closest('.applicant-card');
+            const appId = card.dataset.appId;
+            const select = card.querySelector('.status-select');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(`/recruiter/applications/${appId}/status/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: `status=${encodeURIComponent('shortlisted')}`,
+                });
+
+                if (!res.ok) throw new Error('Shortlist failed');
+
+                btn.textContent = '★ Shortlisted';
+                if (select) {
+                    select.value = 'shortlisted';
+                    select.dataset.previous = 'shortlisted';
+                }
+            } catch (err) {
+                btn.disabled = false;
+                alert("Couldn't shortlist applicant. Please try again.");
+            }
+        }
+    </script>
+
+{% endblock %}

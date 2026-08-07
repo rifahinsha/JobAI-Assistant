@@ -5,9 +5,22 @@ from django.dispatch import receiver
 from django.conf import settings
 
 class Profile(models.Model):
+    ROLE_JOBSEEKER = 'jobseeker'
+    ROLE_RECRUITER = 'recruiter'
+    ROLE_CHOICES = [
+        (ROLE_JOBSEEKER, 'Job Seeker'),
+        (ROLE_RECRUITER, 'Recruiter'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     profile_pic = models.ImageField(upload_to='profile_pics/', default='profile_pics/default.jpg')
     phone_number = models.CharField(max_length=15, blank=True)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_JOBSEEKER)
+    company_name = models.CharField(max_length=250, blank=True)
+    
+    @property
+    def is_recruiter(self):
+        return self.role == self.ROLE_RECRUITER
 
 @receiver(post_save, sender=User)
 def create_profile(sender, instance, created, **kwargs):
