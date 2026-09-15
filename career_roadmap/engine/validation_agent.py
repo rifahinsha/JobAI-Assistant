@@ -3,7 +3,7 @@ import os
 from groq import Groq
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-MODEL = "llama-3.3-70b-versatile"
+MODEL = "openai/gpt-oss-120b"
 
 
 def validate_roadmap(roadmap: str) -> str:
@@ -45,6 +45,8 @@ Roadmap:
         response = client.chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
+            reasoning_effort="low",
+            timeout=45,
         )
         return response.choices[0].message.content
 

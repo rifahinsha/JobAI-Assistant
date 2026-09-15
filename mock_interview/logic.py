@@ -18,7 +18,7 @@ from groq import Groq
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-MODEL = "llama-3.1-8b-instant"
+MODEL = "openai/gpt-oss-120b"
 
 
 def generate_questions(role: str, experience: str, jd: str) -> str:

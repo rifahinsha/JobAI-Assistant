@@ -3,7 +3,7 @@ import os
 from groq import Groq
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-MODEL = "llama-3.3-70b-versatile"
+MODEL = "openai/gpt-oss-120b"
 
 
 def generate_roadmap(role: str, skills: list[str], learning_path: str, feedback: str = "") -> str:
@@ -62,6 +62,9 @@ Return ONLY the roadmap.
         response = client.chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
+            reasoning_effort="low",
+            max_tokens=2048,
+            timeout=45,
         )
         return response.choices[0].message.content
 

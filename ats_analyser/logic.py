@@ -12,7 +12,7 @@ from groq import Groq  # LLM API client
 
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-GROQ_MODEL = "llama-3.3-70b-versatile"
+GROQ_MODEL = "openai/gpt-oss-120b"
 
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:

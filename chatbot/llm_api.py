@@ -9,7 +9,7 @@ load_dotenv(Path(__file__).resolve().parent / ".env")
 
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
-MODEL = "llama-3.3-70b-versatile"
+MODEL = "openai/gpt-oss-120b"
 MAX_TOKENS = 1024
 
 

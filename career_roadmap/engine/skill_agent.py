@@ -5,7 +5,7 @@ from groq import Groq
 from .search_agent import search_trending_skills
 
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-MODEL = "llama-3.3-70b-versatile"
+MODEL = "openai/gpt-oss-120b"
 
 
 def discover_skills(role: str) -> list[str]:
@@ -92,6 +92,8 @@ Do NOT return:
     response = client.chat.completions.create(
         model=MODEL,
         messages=[{"role": "user", "content": prompt}],
+        reasoning_effort="low",
+        timeout=45,
     )
 
     skills_text = response.choices[0].message.content.strip()
